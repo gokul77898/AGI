@@ -248,8 +248,11 @@ ipcMain.handle('screen:snapshot', async () => {
   const t0 = Date.now()
   try {
     log('info', 'screen.snap', 'capturing...')
-    const img = await screen.getPrimaryDisplay().thumbnail({ size: { width: 1920, height: 1080 } })
-    const dataUrl = img.toDataURL()
+    const sources = await desktopCapturer.getSources({ types: ['screen'] })
+    if (!sources.length) throw new Error('No screen sources found')
+    const source = sources[0]
+    log('info', 'screen.snap', `source: ${source.name} ${source.thumbnail_size}`)
+    const dataUrl = source.thumbnail.toDataURL()
     log('info', 'screen.snap', `captured "Entire screen" ${Math.round(dataUrl.length / 1024)}KB in ${Date.now() - t0}ms`)
     return { dataUrl }
   } catch (e) {
@@ -262,9 +265,12 @@ ipcMain.handle('screen:snap', async () => {
   try {
     log('info', 'screen.snap', 'capturing...')
     const t0 = Date.now()
-    const img = await screen.getPrimaryDisplay().thumbnail({ size: { width: 1920, height: 1080 } })
+    const sources = await desktopCapturer.getSources({ types: ['screen'] })
+    if (!sources.length) throw new Error('No screen sources found')
+    const source = sources[0]
+    const thumbnail = source.thumbnail
     // Downscale to max 512px for vision API (avoids 413 errors)
-    const resized = img.resize({ width: 512, height: 512 })
+    const resized = thumbnail.resize({ width: 512, height: 512 })
     const dataUrl = resized.toDataURL('image/jpeg', 0.7)
     log('info', 'screen.snap', `captured "Entire screen" ${Math.round(dataUrl.length / 1024)}KB in ${Date.now() - t0}ms`)
     return { dataUrl }

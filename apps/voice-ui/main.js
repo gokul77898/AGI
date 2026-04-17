@@ -32,8 +32,12 @@ let win = null
 function log(level, stage, msg, extra) {
   const ts = new Date().toISOString().slice(11, 23)
   const line = `[${ts}] ${level.toUpperCase().padEnd(5)} ${stage.padEnd(14)} ${msg}`
-  // Main-process console → terminal
-  process.stderr.write(line + (extra ? '  ' + JSON.stringify(extra) : '') + '\n')
+  // Main-process console → terminal (handle EPIPE during shutdown)
+  try {
+    process.stderr.write(line + (extra ? '  ' + JSON.stringify(extra) : '') + '\n')
+  } catch (e) {
+    // Ignore EPIPE during shutdown
+  }
   // Renderer → UI log panel
   if (win && !win.isDestroyed()) {
     win.webContents.send('log:event', { ts, level, stage, msg, extra })

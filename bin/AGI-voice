@@ -1,0 +1,15 @@
+#!/bin/bash
+# CORTEX Voice Loop — hands-free AGI.
+# Just run: ./bin/AGI-voice
+# Or symlink into PATH: ln -s $PWD/bin/AGI-voice /usr/local/bin/AGI-voice
+set -e
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+# Auto-load .env so HF_TOKEN etc. are available
+if [ -f "$REPO_ROOT/.env" ]; then
+  set -a
+  source "$REPO_ROOT/.env"
+  set +a
+fi
+
+exec python3 "$REPO_ROOT/python/cortex_voice_loop.py" "$@"

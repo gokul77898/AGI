@@ -60,6 +60,53 @@ import testGen from './commands/test-gen/index.js'
 import securityScan from './commands/security-scan/index.js'
 import perfAnalyze from './commands/perf-analyze/index.js'
 import scanReport from './commands/scan-report.js'
+// --- Tier 2: Developer Productivity ---
+import tier2Refactor from './commands/tier2/refactor.js'
+import tier2Explain from './commands/tier2/explain.js'
+import tier2Docs from './commands/tier2/docs.js'
+import tier2Fix from './commands/tier2/fix.js'
+import tier2Todo from './commands/tier2/todo.js'
+import tier2Deps from './commands/tier2/deps.js'
+import tier2LintFix from './commands/tier2/lint-fix.js'
+import tier2TypeCheck from './commands/tier2/type-check.js'
+// --- Tier 3: Code Intelligence ---
+import tier3Architecture from './commands/tier3/architecture.js'
+import tier3Complexity from './commands/tier3/complexity.js'
+import tier3DeadCode from './commands/tier3/dead-code.js'
+import tier3ApiMap from './commands/tier3/api-map.js'
+import tier3SchemaDiff from './commands/tier3/schema-diff.js'
+import tier3CoverageGap from './commands/tier3/coverage-gap.js'
+import tier3BundleAnalyze from './commands/tier3/bundle-analyze.js'
+// --- Tier 4: Git & Collaboration ---
+import tier4ReleaseNotesAi from './commands/tier4/release-notes-ai.js'
+import tier4Bisect from './commands/tier4/bisect.js'
+import tier4ConflictResolve from './commands/tier4/conflict-resolve.js'
+import tier4BranchCleanup from './commands/tier4/branch-cleanup.js'
+import tier4CommitSquash from './commands/tier4/commit-squash.js'
+import tier4ReviewQueue from './commands/tier4/review-queue.js'
+// --- Tier 5: Automation / Agentic ---
+import tier5Watch from './commands/tier5/watch.js'
+import tier5AutoFix from './commands/tier5/auto-fix.js'
+import tier5Pipeline from './commands/tier5/pipeline.js'
+import tier5Dockerize from './commands/tier5/dockerize.js'
+import tier5Deploy from './commands/tier5/deploy.js'
+import tier5Scheduler from './commands/tier5/scheduler.js'
+// --- Tier 6: Knowledge / RAG ---
+import tier6Ask from './commands/tier6/ask.js'
+import tier6AiMemory from './commands/tier6/ai-memory.js'
+import tier6Onboard from './commands/tier6/onboard.js'
+import tier6Search from './commands/tier6/search.js'
+import tier6Stackoverflow from './commands/tier6/stackoverflow.js'
+// --- Tier 7: Multi-Model / Swarm ---
+import tier7Swarm from './commands/tier7/swarm.js'
+import tier7Compare from './commands/tier7/compare.js'
+import tier7Debate from './commands/tier7/debate.js'
+import tier7Cheap from './commands/tier7/cheap.js'
+// --- Tier 8: Observability ---
+import tier8Logs from './commands/tier8/logs.js'
+import tier8Metrics from './commands/tier8/metrics.js'
+import tier8Trace from './commands/tier8/trace.js'
+import tier8Alerts from './commands/tier8/alerts.js'
 import bughunter from './commands/bughunter/index.js'
 import terminalSetup from './commands/terminalSetup/index.js'
 import usage from './commands/usage/index.js'
@@ -328,6 +375,53 @@ const COMMANDS = memoize((): Command[] => [
   securityScan,
   perfAnalyze,
   scanReport,
+  // Tier 2
+  tier2Refactor,
+  tier2Explain,
+  tier2Docs,
+  tier2Fix,
+  tier2Todo,
+  tier2Deps,
+  tier2LintFix,
+  tier2TypeCheck,
+  // Tier 3
+  tier3Architecture,
+  tier3Complexity,
+  tier3DeadCode,
+  tier3ApiMap,
+  tier3SchemaDiff,
+  tier3CoverageGap,
+  tier3BundleAnalyze,
+  // Tier 4
+  tier4ReleaseNotesAi,
+  tier4Bisect,
+  tier4ConflictResolve,
+  tier4BranchCleanup,
+  tier4CommitSquash,
+  tier4ReviewQueue,
+  // Tier 5
+  tier5Watch,
+  tier5AutoFix,
+  tier5Pipeline,
+  tier5Dockerize,
+  tier5Deploy,
+  tier5Scheduler,
+  // Tier 6
+  tier6Ask,
+  tier6AiMemory,
+  tier6Onboard,
+  tier6Search,
+  tier6Stackoverflow,
+  // Tier 7
+  tier7Swarm,
+  tier7Compare,
+  tier7Debate,
+  tier7Cheap,
+  // Tier 8
+  tier8Logs,
+  tier8Metrics,
+  tier8Trace,
+  tier8Alerts,
   rewind,
   securityReview,
   terminalSetup,

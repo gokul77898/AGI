@@ -1,1 +1,0 @@
-"""IMF Static Assets."""

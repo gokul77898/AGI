@@ -1,3 +1,0 @@
-streamlit
-openbb
-openbb-biztoc

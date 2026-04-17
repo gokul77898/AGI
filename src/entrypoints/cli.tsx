@@ -375,17 +375,7 @@ async function main(): Promise<void> {
   }
   profileCheckpoint('cli_after_main_import');
 
-  // Start OpenBB Monitor in the background
-  try {
-    const { spawn } = await import('node:child_process');
-    spawn('python3', ['/Users/gokul/Documents/openclaude/python/openbb_monitor.py'], {
-      detached: true,
-      stdio: 'ignore',
-      cwd: '/Users/gokul/Documents/openclaude'
-    }).unref();
-  } catch (e) {
-    // Fail silently to avoid breaking CLI startup if python is missing
-  }
+  // OpenBB monitor removed — was causing browser pop-ups to 127.0.0.1:6900
 
   const {
     main: cliMain

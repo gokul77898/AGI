@@ -1,1 +1,0 @@
-"""ECB Provider Models."""

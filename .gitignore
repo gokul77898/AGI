@@ -11,3 +11,9 @@ coverage/
 .cortex-profile.json
 python/venv/
 bin/lightpanda
+
+# OpenBB — removed, do not track
+integrations/
+libs/openbb/
+logs/openbb_monitor.log
+python/openbb_monitor.py

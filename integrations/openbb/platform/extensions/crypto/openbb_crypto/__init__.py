@@ -1,1 +1,0 @@
-"""OpenBB Crypto Extension."""

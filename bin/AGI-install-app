@@ -48,17 +48,10 @@ printf 'APPL????' > "$CONTENTS/PkgInfo"
 
 cat > "$MACOS/gokul-launcher" <<LAUNCHER
 #!/bin/bash
-# GOKUL — CORTEX AGI launcher.
-# 1. Start the web dashboard in background (silent, auto-open disabled).
-# 2. Start the Electron UI in foreground.
+# GOKUL — CORTEX AGI launcher (Electron UI only).
+# Web dashboard is auto-opened by the CLI, not this app.
 REPO="$REPO_ROOT"
 export PATH="/opt/homebrew/bin:/usr/local/bin:\$PATH"
-
-# Kill any previous orphans so ports free up
-pkill -f "apps/web-ui/server.mjs" 2>/dev/null || true
-
-# Web dashboard in background (auto-opens browser once)
-CORTEX_AUTO_OPEN=true "\$REPO/bin/AGI-web" >"/tmp/gokul-web.log" 2>&1 &
 
 # Electron UI in foreground — when the user quits it, script exits
 exec "\$REPO/bin/AGI-ui"
@@ -75,6 +68,4 @@ echo "   1. ⌘Space → type  GOKUL  → Enter  → app opens"
 echo "   2. Drag $APP onto the Dock to pin it"
 echo "   3. While running:  ⌘⇧A toggle window   ⌘⇧F fullscreen"
 echo
-echo "   Launches BOTH at once:"
-echo "     • Electron floating UI (foreground)"
-echo "     • Web dashboard at http://localhost:3737 (auto-opens in browser)"
+echo "   Note: Web dashboard auto-opens when you run the CLI (./bin/AGI)."

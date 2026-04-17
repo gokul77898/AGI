@@ -381,6 +381,19 @@ async function main(): Promise<void> {
     main: cliMain
   } = await import('../main.js');
   profileCheckpoint('cli_after_main_import');
+
+  // Auto-launch web dashboard in background (unless explicitly disabled)
+  if (process.env.CORTEX_WEB_AUTO_OPEN !== 'false') {
+    const { spawn } = await import('child_process');
+    const { resolve } = await import('path');
+    const webScript = resolve(process.cwd(), 'bin', 'AGI-web');
+    spawn(webScript, [], {
+      detached: true,
+      stdio: 'ignore',
+      env: { ...process.env, CORTEX_AUTO_OPEN: 'true' }
+    }).unref();
+  }
+
   await cliMain();
   profileCheckpoint('cli_after_main_complete');
 }

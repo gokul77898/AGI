@@ -231,75 +231,60 @@ ipcMain.handle('agi:fastAsk', async (_evt, { prompt, context }) => {
     'You are CORTEX, a concise, helpful AGI assistant running on the user\'s Mac. ' +
     'Be direct, practical, and brief. ' +
     (context ? `Current screen: ${context}` : '')
-  const ollamaUrl = process.env.OLLAMA_HOST || 'http://localhost:11434'
-  const ollamaModel = process.env.CORTEX_FAST_MODEL || 'llama3.2:3b'
+  const messages = [
+    { role: 'system', content: sys },
+    { role: 'user', content: prompt },
+  ]
 
-  // Try Ollama first (local, fast, reliable, offline). Fall back to HF if unavailable.
-  const t0 = Date.now()
+  // PRIMARY: HuggingFace (non-streaming since router's SSE is broken).
+  // FALLBACK: Local Ollama only when HF is unreachable (offline mode).
   try {
-    log('info', 'fast.ask', `POST ${ollamaUrl}/api/chat model=${ollamaModel} stream=true`)
-    const res = await fetch(`${ollamaUrl}/api/chat`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: ollamaModel,
-        messages: [ { role: 'system', content: sys }, { role: 'user', content: prompt } ],
-        stream: true,
-      }),
-    })
-    log('info', 'fast.ask', `HTTP ${res.status}`)
-    if (!res.ok) throw new Error(`Ollama HTTP ${res.status}`)
-    const reader = res.body.getReader()
-    const decoder = new TextDecoder()
-    let buf = ''
-    let chunks = 0
-    let chars = 0
-    let firstByte = null
-    for (;;) {
-      const { done, value } = await reader.read()
-      if (done) break
-      if (firstByte === null) {
-        firstByte = Date.now() - t0
-        log('info', 'fast.ask', `first-byte ${firstByte}ms`)
-      }
-      buf += decoder.decode(value, { stream: true })
-      const lines = buf.split('\n')
-      buf = lines.pop() || ''
-      for (const line of lines) {
-        if (!line.trim()) continue
-        try {
-          const j = JSON.parse(line)
-          const delta = j.message?.content || ''
-          if (delta) {
-            chunks++; chars += delta.length
-            if (win && !win.isDestroyed()) win.webContents.send('agi:chunk', delta)
-          }
-        } catch { /* skip */ }
-      }
+    const res = await hfChat({ messages, stream: false, stage: 'fast.ask' })
+    if (res.text && win && !win.isDestroyed()) {
+      win.webContents.send('agi:chunk', res.text)
+      return { text: '__streamed__' }
     }
-    log('info', 'fast.ask', `done ${Date.now() - t0}ms chunks=${chunks} chars=${chars}`)
-    if (chars === 0) throw new Error('Ollama empty response')
-    return { text: '__streamed__' }
-  } catch (ollamaErr) {
-    log('warn', 'fast.ask', `Ollama failed: ${ollamaErr.message} — falling back to HF`)
+    throw new Error('HF empty response')
+  } catch (hfErr) {
+    log('warn', 'fast.ask', `HF failed: ${hfErr.message} — falling back to Ollama`)
+    const ollamaUrl = process.env.OLLAMA_HOST || 'http://localhost:11434'
+    const ollamaModel = process.env.CORTEX_FAST_MODEL || 'llama3.2:3b'
+    const t0 = Date.now()
     try {
-      const messages = [
-        { role: 'system', content: sys },
-        { role: 'user', content: prompt },
-      ]
-      await hfChat({
-        messages,
-        stream: false,
-        stage: 'fast.ask',
-      }).then((res) => {
-        if (res.text && win && !win.isDestroyed()) {
-          win.webContents.send('agi:chunk', res.text)
-        }
+      log('info', 'fast.ask', `POST ${ollamaUrl}/api/chat model=${ollamaModel} (offline fallback)`)
+      const res = await fetch(`${ollamaUrl}/api/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: ollamaModel, messages, stream: true }),
       })
+      if (!res.ok) throw new Error(`Ollama HTTP ${res.status}`)
+      const reader = res.body.getReader()
+      const decoder = new TextDecoder()
+      let buf = ''
+      let chunks = 0, chars = 0
+      for (;;) {
+        const { done, value } = await reader.read()
+        if (done) break
+        buf += decoder.decode(value, { stream: true })
+        const lines = buf.split('\n')
+        buf = lines.pop() || ''
+        for (const line of lines) {
+          if (!line.trim()) continue
+          try {
+            const j = JSON.parse(line)
+            const delta = j.message?.content || ''
+            if (delta) {
+              chunks++; chars += delta.length
+              if (win && !win.isDestroyed()) win.webContents.send('agi:chunk', delta)
+            }
+          } catch { /* skip */ }
+        }
+      }
+      log('info', 'fast.ask', `done ${Date.now() - t0}ms chunks=${chunks} chars=${chars} (offline)`)
       return { text: '__streamed__' }
     } catch (e) {
-      log('error', 'fast.ask', String(e.message || e))
-      return { error: String(e.message || e) }
+      log('error', 'fast.ask', `both HF+Ollama failed: ${e.message}`)
+      return { error: `Both HF and Ollama unreachable: ${e.message}` }
     }
   }
 })

@@ -188,6 +188,21 @@ function hfChat({ messages, model, stream = false, onChunk, stage = 'hf.chat' })
           const ms = Date.now() - t0
           if (stream) {
             log('info', stage, `done ${ms}ms chunks=${chunkCount} chars=${charCount}`)
+            // If no chunks received, try to parse buf as JSON (non-SSE response)
+            if (chunkCount === 0 && buf.trim() && onChunk) {
+              try {
+                const j = JSON.parse(buf)
+                const text = j.choices?.[0]?.message?.content || j.error?.message || ''
+                if (text) {
+                  log('warn', stage, `non-SSE fallback: ${text.length} chars`)
+                  onChunk(text)
+                } else {
+                  log('error', stage, `empty response: ${buf.slice(0, 300)}`)
+                }
+              } catch {
+                log('error', stage, `bad buf (${buf.length}B): ${buf.slice(0, 300)}`)
+              }
+            }
             return resolve({ ok: true })
           }
           try {

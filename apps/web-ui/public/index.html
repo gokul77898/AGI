@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>CORTEX Dashboard</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  :root {
+    --bg: #0b0b12; --panel: #14141f; --panel2: #1a1a28; --fg: #e8e8f0;
+    --muted: #8a8ab0; --accent: #7dd3fc; --accent2: #f472b6;
+    --ok: #22c55e; --warn: #fbbf24; --err: #ef4444;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; font-family: -apple-system, 'SF Pro Display', system-ui, sans-serif;
+    background: var(--bg); color: var(--fg); min-height: 100vh; }
+  header { padding: 18px 28px; border-bottom: 1px solid #1f1f2e;
+    display: flex; align-items: center; justify-content: space-between;
+    background: linear-gradient(90deg, #0b0b12 0%, #14141f 100%); }
+  header h1 { font-size: 16px; font-weight: 700; letter-spacing: 2px; margin: 0;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  header .env { color: var(--muted); font-size: 11px; font-family: ui-monospace, monospace; }
+  .pills { display: flex; gap: 6px; }
+  .pill { padding: 3px 8px; border-radius: 6px; font-size: 11px;
+    background: #1a1a28; border: 1px solid #2a2a3a; color: var(--muted); }
+  .pill.ok { color: var(--ok); border-color: rgba(34,197,94,0.4); }
+  .pill.off { color: var(--muted); opacity: 0.6; }
+
+  nav { display: flex; gap: 2px; padding: 0 20px; background: var(--panel);
+    border-bottom: 1px solid #1f1f2e; }
+  nav button { background: transparent; border: 0; color: var(--muted);
+    padding: 12px 18px; cursor: pointer; font-size: 13px; font-weight: 500;
+    border-bottom: 2px solid transparent; }
+  nav button:hover { color: var(--fg); }
+  nav button.on { color: var(--accent); border-bottom-color: var(--accent); }
+
+  main { padding: 24px 28px; max-width: 1400px; margin: 0 auto; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
+  .card { background: var(--panel); border: 1px solid #1f1f2e; border-radius: 12px;
+    padding: 16px 18px; }
+  .card h3 { margin: 0 0 6px; font-size: 11px; letter-spacing: 2px;
+    color: var(--muted); text-transform: uppercase; font-weight: 600; }
+  .card .big { font-size: 28px; font-weight: 700; }
+  .card .sub { color: var(--muted); font-size: 12px; margin-top: 4px; }
+
+  .list { background: var(--panel); border: 1px solid #1f1f2e; border-radius: 12px;
+    overflow: hidden; }
+  .row { padding: 10px 16px; border-bottom: 1px solid #1f1f2e;
+    display: flex; align-items: center; gap: 10px; font-size: 13px; }
+  .row:last-child { border-bottom: 0; }
+  .row:hover { background: var(--panel2); }
+  .row .name { font-family: ui-monospace, monospace; color: var(--accent); min-width: 160px; }
+  .row .tier { font-size: 10px; padding: 2px 6px; border-radius: 4px;
+    background: rgba(244,114,182,0.15); color: var(--accent2); }
+  .row .desc { color: var(--muted); flex: 1; }
+  .row .aliases { color: var(--muted); font-family: ui-monospace, monospace; font-size: 11px; }
+
+  .ask-wrap { display: flex; gap: 10px; margin-bottom: 14px; }
+  .ask-wrap input { flex: 1; background: var(--panel); border: 1px solid #2a2a3a;
+    border-radius: 10px; padding: 12px 16px; color: var(--fg); font-size: 14px; outline: none; }
+  .ask-wrap input:focus { border-color: var(--accent); }
+  .ask-wrap button { background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: 0; border-radius: 10px; color: #0a0a14; font-weight: 600;
+    padding: 0 22px; cursor: pointer; }
+  #response { background: var(--panel); border: 1px solid #1f1f2e; border-radius: 12px;
+    padding: 16px 18px; min-height: 200px; white-space: pre-wrap; font-size: 13px;
+    font-family: ui-monospace, monospace; color: var(--fg); }
+  #response:empty::before { content: 'Responses will stream here…'; color: var(--muted); font-style: italic; }
+
+  .search { width: 100%; background: var(--panel); border: 1px solid #2a2a3a;
+    border-radius: 8px; padding: 10px 14px; color: var(--fg); margin-bottom: 12px;
+    font-size: 13px; outline: none; }
+  .hidden { display: none; }
+  .muted { color: var(--muted); }
+  .mono { font-family: ui-monospace, monospace; font-size: 12px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🧠 CORTEX Dashboard</h1>
+  <div class="pills" id="pills"></div>
+  <div class="env" id="env">loading…</div>
+</header>
+
+<nav id="nav">
+  <button class="on" data-tab="overview">Overview</button>
+  <button data-tab="ask">Ask</button>
+  <button data-tab="commands">Commands</button>
+  <button data-tab="agents">Agents</button>
+  <button data-tab="mcp">MCP</button>
+  <button data-tab="history">History</button>
+</nav>
+
+<main>
+  <section id="overview">
+    <div class="grid" id="stats"></div>
+  </section>
+
+  <section id="ask" class="hidden">
+    <div class="ask-wrap">
+      <input id="prompt" placeholder="Ask CORTEX anything — file edits, refactors, explanations, commands… (Enter to send)"/>
+      <button id="send">Send</button>
+    </div>
+    <div id="response"></div>
+  </section>
+
+  <section id="commands" class="hidden">
+    <input class="search" id="cmd-search" placeholder="Filter commands…"/>
+    <div class="list" id="cmd-list"></div>
+  </section>
+
+  <section id="agents" class="hidden">
+    <input class="search" id="agent-search" placeholder="Filter 150+ agents…"/>
+    <div class="list" id="agent-list"></div>
+  </section>
+
+  <section id="mcp" class="hidden">
+    <div class="list" id="mcp-list"></div>
+  </section>
+
+  <section id="history" class="hidden">
+    <div class="list" id="history-list"></div>
+  </section>
+</main>
+
+<script>
+const $ = (s) => document.querySelector(s)
+const $$ = (s) => document.querySelectorAll(s)
+
+// ─── Tabs ────────────────────────────────────────────────
+$$('nav button').forEach(b => b.onclick = () => {
+  $$('nav button').forEach(x => x.classList.toggle('on', x === b))
+  $$('main > section').forEach(s => s.classList.toggle('hidden', s.id !== b.dataset.tab))
+  if (b.dataset.tab === 'history') loadHistory()
+})
+
+// ─── Status ──────────────────────────────────────────────
+async function loadStatus() {
+  const s = await fetch('/api/status').then(r => r.json())
+  $('#env').textContent = `${s.repo} · pid ${s.pid} · up ${Math.round(s.uptime)}s`
+  const pills = [
+    ['HF',     s.env.hfToken],
+    ['GitHub', s.env.github],
+    ['Ollama', s.env.ollama],
+  ]
+  $('#pills').innerHTML = pills.map(([k, v]) =>
+    `<span class="pill ${v ? 'ok' : 'off'}">${v ? '●' : '○'} ${k}</span>`
+  ).join('')
+  $('#stats').innerHTML = `
+    <div class="card"><h3>Slash Commands</h3><div class="big">${s.counts.commands}</div><div class="sub">across 9 tiers</div></div>
+    <div class="card"><h3>Specialist Agents</h3><div class="big">${s.counts.agents}</div><div class="sub">src/skills/agency</div></div>
+    <div class="card"><h3>MCP Servers</h3><div class="big">${s.counts.mcps}</div><div class="sub">see MCP tab for status</div></div>
+    <div class="card"><h3>Model</h3><div class="big" style="font-size:15px;">${s.env.model}</div><div class="sub">HF Router</div></div>
+  `
+}
+
+// ─── Commands ────────────────────────────────────────────
+let allCommands = []
+async function loadCommands() {
+  allCommands = await fetch('/api/commands').then(r => r.json())
+  renderCommands()
+}
+function renderCommands() {
+  const q = $('#cmd-search').value.trim().toLowerCase()
+  const filtered = allCommands.filter(c =>
+    !q || c.name.includes(q) || c.description.toLowerCase().includes(q) ||
+    (c.aliases||[]).some(a => a.includes(q))
+  )
+  $('#cmd-list').innerHTML = filtered.map(c => `
+    <div class="row">
+      <span class="name">/${c.name}</span>
+      <span class="tier">${c.tier}</span>
+      <span class="desc">${escapeHtml(c.description || '')}</span>
+      <span class="aliases">${(c.aliases||[]).map(a=>'/'+a).join(' ')}</span>
+    </div>`).join('') || '<div class="row muted">No matches</div>'
+}
+$('#cmd-search').addEventListener('input', renderCommands)
+
+// ─── Agents ──────────────────────────────────────────────
+let allAgents = []
+async function loadAgents() {
+  allAgents = await fetch('/api/agents').then(r => r.json())
+  renderAgents()
+}
+function renderAgents() {
+  const q = $('#agent-search').value.trim().toLowerCase()
+  const filtered = allAgents.filter(a => !q || a.name.toLowerCase().includes(q) || a.path.toLowerCase().includes(q))
+  $('#agent-list').innerHTML = filtered.slice(0, 300).map(a => `
+    <div class="row">
+      <span class="name">${escapeHtml(a.name)}</span>
+      <span class="tier">${a.kind}</span>
+      <span class="desc mono">${escapeHtml(a.path)}</span>
+    </div>`).join('') || '<div class="row muted">No matches</div>'
+}
+$('#agent-search').addEventListener('input', renderAgents)
+
+// ─── MCP ─────────────────────────────────────────────────
+async function loadMcp() {
+  const { servers } = await fetch('/api/mcp').then(r => r.json())
+  $('#mcp-list').innerHTML = servers.map(m => `
+    <div class="row">
+      <span class="name">${escapeHtml(m.name)}</span>
+      <span class="tier" style="background: ${m.configured ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)'}; color: ${m.configured ? 'var(--ok)' : 'var(--err)'};">
+        ${m.configured ? 'READY' : 'NEEDS ENV'}
+      </span>
+      <span class="desc mono">${escapeHtml(m.cmd)}</span>
+      <span class="aliases">${(m.envs || []).join(' ')}</span>
+    </div>`).join('') || '<div class="row muted">No MCP servers configured</div>'
+}
+
+// ─── History ─────────────────────────────────────────────
+async function loadHistory() {
+  const h = await fetch('/api/history').then(r => r.json())
+  $('#history-list').innerHTML = h.map(x => `
+    <div class="row">
+      <span class="name">${new Date(x.ts).toLocaleTimeString()}</span>
+      <span class="tier">${x.ms}ms · exit ${x.code}</span>
+      <span class="desc">${escapeHtml(x.prompt)}</span>
+    </div>`).join('') || '<div class="row muted">No history yet — ask something in the Ask tab.</div>'
+}
+
+// ─── Ask (SSE streaming) ─────────────────────────────────
+$('#prompt').addEventListener('keydown', e => { if (e.key === 'Enter') sendPrompt() })
+$('#send').onclick = sendPrompt
+async function sendPrompt() {
+  const prompt = $('#prompt').value.trim()
+  if (!prompt) return
+  $('#response').textContent = '⏳ Thinking…\n'
+  const resp = await fetch('/api/ask', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompt }),
+  })
+  if (!resp.ok) { $('#response').textContent = '❌ ' + await resp.text(); return }
+  const reader = resp.body.getReader()
+  const dec = new TextDecoder()
+  let buf = ''
+  $('#response').textContent = ''
+  while (true) {
+    const { value, done } = await reader.read()
+    if (done) break
+    buf += dec.decode(value, { stream: true })
+    const frames = buf.split('\n\n')
+    buf = frames.pop()
+    for (const frame of frames) {
+      const evt = /^event: (.+)$/m.exec(frame)?.[1]
+      const data = /^data: (.+)$/m.exec(frame)?.[1]
+      if (!data) continue
+      try {
+        const j = JSON.parse(data)
+        if (evt === 'chunk') $('#response').textContent += j.text
+        else if (evt === 'done') $('#response').textContent += `\n\n✓ ${j.ms}ms · exit ${j.code}`
+      } catch {}
+    }
+  }
+}
+
+// ─── Live WS events ──────────────────────────────────────
+try {
+  const ws = new WebSocket(`ws://${location.host}/ws`)
+  ws.onmessage = (e) => { /* reserved for future live session viewer */ }
+} catch {}
+
+function escapeHtml(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])) }
+
+loadStatus()
+loadCommands()
+loadAgents()
+loadMcp()
+setInterval(loadStatus, 10000)
+</script>
+</body>
+</html>

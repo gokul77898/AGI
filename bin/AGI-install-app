@@ -1,0 +1,42 @@
+#!/bin/bash
+# Creates a double-clickable CORTEX.app in ~/Applications that launches
+# the Electron voice UI. After running once, you can spotlight "CORTEX"
+# or pin it to the Dock instead of typing ./bin/AGI-ui in a terminal.
+set -e
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+APP="$HOME/Applications/CORTEX.app"
+CONTENTS="$APP/Contents"
+MACOS="$CONTENTS/MacOS"
+RES="$CONTENTS/Resources"
+
+mkdir -p "$MACOS" "$RES"
+
+cat > "$CONTENTS/Info.plist" <<PLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>CFBundleName</key>                  <string>CORTEX</string>
+  <key>CFBundleDisplayName</key>           <string>CORTEX AGI</string>
+  <key>CFBundleExecutable</key>            <string>cortex-launcher</string>
+  <key>CFBundleIdentifier</key>            <string>com.cortex.agi</string>
+  <key>CFBundleVersion</key>               <string>1.0</string>
+  <key>CFBundleShortVersionString</key>    <string>1.0</string>
+  <key>CFBundlePackageType</key>           <string>APPL</string>
+  <key>LSMinimumSystemVersion</key>        <string>11.0</string>
+  <key>NSHighResolutionCapable</key>       <true/>
+  <key>LSUIElement</key>                   <false/>
+  <key>NSCameraUsageDescription</key>      <string>CORTEX uses your camera only if you invoke a vision task.</string>
+  <key>NSMicrophoneUsageDescription</key>  <string>CORTEX needs the mic for voice input.</string>
+</dict></plist>
+PLIST
+
+cat > "$MACOS/cortex-launcher" <<LAUNCHER
+#!/bin/bash
+exec "$REPO_ROOT/bin/AGI-ui" "\$@"
+LAUNCHER
+chmod +x "$MACOS/cortex-launcher"
+
+echo "✅ Installed: $APP"
+echo "   • Spotlight: ⌘Space then type 'CORTEX'"
+echo "   • Dock: drag $APP onto your dock"
+echo "   • Global hotkey (while running): ⌘⇧A toggle, ⌘⇧F fullscreen"

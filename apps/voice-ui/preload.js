@@ -18,4 +18,6 @@ contextBridge.exposeInMainWorld('cortex', {
   windowClose: () => ipcRenderer.invoke('window:close'),
   windowMinimize: () => ipcRenderer.invoke('window:minimize'),
   windowPin: (p) => ipcRenderer.invoke('window:pin', p),
+  windowMaximize: () => ipcRenderer.invoke('window:maximize'),
+  windowFullscreen: () => ipcRenderer.invoke('window:fullscreen'),
 })

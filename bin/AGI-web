@@ -1,0 +1,16 @@
+#!/bin/bash
+# CORTEX Dashboard — localhost web UI at http://localhost:3737
+# Run: ./bin/AGI-web   (auto-opens browser)
+set -e
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+APP_DIR="$REPO_ROOT/apps/web-ui"
+
+if [ ! -d "$APP_DIR/node_modules/express" ]; then
+  echo "📦 Installing express + ws (one-time, ~15s)..."
+  cd "$APP_DIR"
+  (bun install 2>/dev/null) || npm install --silent
+  cd - >/dev/null
+fi
+
+cd "$APP_DIR"
+exec node server.mjs "$@"

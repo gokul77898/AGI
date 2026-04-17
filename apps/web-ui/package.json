@@ -1,0 +1,14 @@
+{
+  "name": "cortex-web-ui",
+  "version": "0.1.0",
+  "description": "CORTEX localhost dashboard — sessions, RAG, MCP, agents, command history",
+  "type": "module",
+  "main": "server.mjs",
+  "scripts": {
+    "start": "node server.mjs"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "ws": "^8.18.0"
+  }
+}

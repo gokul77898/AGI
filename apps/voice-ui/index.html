@@ -287,6 +287,8 @@
     <div class="controls">
       <button class="ctrl pin" id="pinBtn" title="Always on top"></button>
       <button class="ctrl min" id="minBtn" title="Minimize"></button>
+      <button class="ctrl fs"  id="fsBtn"  title="Fullscreen (⌘⇧F)" style="background:#7dd3fc"></button>
+      <button class="ctrl max" id="maxBtn" title="Maximize" style="background:#60a5fa"></button>
       <button class="ctrl close" id="closeBtn" title="Close"></button>
     </div>
   </div>
@@ -359,6 +361,8 @@
   // ─── Window controls ─────────────────────────────────────────
   closeBtn.onclick = () => window.cortex.windowClose()
   minBtn.onclick = () => window.cortex.windowMinimize()
+  document.getElementById('maxBtn').onclick = () => window.cortex.windowMaximize()
+  document.getElementById('fsBtn').onclick = () => window.cortex.windowFullscreen()
   pinBtn.onclick = async () => {
     pinned = !pinned
     await window.cortex.windowPin(pinned)

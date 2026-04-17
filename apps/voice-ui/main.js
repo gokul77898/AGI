@@ -297,6 +297,17 @@ ipcMain.handle('window:pin', (_e, pinned) => {
   if (win) win.setAlwaysOnTop(Boolean(pinned), 'floating')
   return Boolean(pinned)
 })
+ipcMain.handle('window:maximize', () => {
+  if (!win) return false
+  if (win.isMaximized()) { win.unmaximize(); return false }
+  win.maximize(); return true
+})
+ipcMain.handle('window:fullscreen', () => {
+  if (!win) return false
+  const next = !win.isFullScreen()
+  win.setFullScreen(next)
+  return next
+})
 
 function stripAnsi(s) {
   return s.replace(/\x1b\[[0-9;]*[mGKHJ]/g, '')
@@ -307,10 +318,15 @@ app.whenReady().then(() => {
   log('info', 'app.ready', `electron=${process.versions.electron} node=${process.versions.node} repo=${REPO_ROOT}`)
   log('info', 'app.env', `HF_TOKEN=${process.env.HF_TOKEN ? 'set' : 'MISSING'} model=${process.env.HF_MODEL_ID || 'zai-org/GLM-5:together'}`)
 
-  // Global hotkey: Cmd+Shift+A to toggle window
+  // Global hotkey: Cmd+Shift+A to toggle window from anywhere
   globalShortcut.register('CommandOrControl+Shift+A', () => {
     if (!win) return createWindow()
     if (win.isVisible()) win.hide(); else win.show()
+  })
+
+  // Global hotkey: Cmd+Shift+F to toggle fullscreen
+  globalShortcut.register('CommandOrControl+Shift+F', () => {
+    if (win) win.setFullScreen(!win.isFullScreen())
   })
 
   app.on('activate', () => {

@@ -1,0 +1,39 @@
+{
+  "name": "cortex-vscode",
+  "displayName": "CORTEX AGI",
+  "description": "Right-click any code → Ask CORTEX / Refactor / Explain. Uses the local cortex.mjs CLI.",
+  "version": "0.1.0",
+  "publisher": "cortex",
+  "engines": { "vscode": "^1.80.0" },
+  "main": "./extension.js",
+  "categories": ["AI", "Other"],
+  "activationEvents": ["onStartupFinished"],
+  "contributes": {
+    "commands": [
+      { "command": "cortex.ask",      "title": "CORTEX: Ask about selection"    },
+      { "command": "cortex.refactor", "title": "CORTEX: Refactor selection"     },
+      { "command": "cortex.explain",  "title": "CORTEX: Explain selection"      },
+      { "command": "cortex.fix",      "title": "CORTEX: Find bugs in selection" },
+      { "command": "cortex.askFile",  "title": "CORTEX: Ask about whole file"   }
+    ],
+    "menus": {
+      "editor/context": [
+        { "when": "editorHasSelection", "command": "cortex.ask",      "group": "cortex@1" },
+        { "when": "editorHasSelection", "command": "cortex.explain",  "group": "cortex@2" },
+        { "when": "editorHasSelection", "command": "cortex.refactor", "group": "cortex@3" },
+        { "when": "editorHasSelection", "command": "cortex.fix",      "group": "cortex@4" },
+        { "command": "cortex.askFile",                                 "group": "cortex@5" }
+      ]
+    },
+    "configuration": {
+      "title": "CORTEX",
+      "properties": {
+        "cortex.cliPath": {
+          "type": "string",
+          "default": "",
+          "description": "Absolute path to cortex.mjs. Leave empty to auto-detect (workspace root / ~/Documents/openclaude)."
+        }
+      }
+    }
+  }
+}

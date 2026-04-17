@@ -255,6 +255,72 @@ export CORTEX_VISION_MODEL="Qwen/Qwen2-VL-7B-Instruct"   # or any HF vision mode
 
 First launch triggers a macOS **Screen Recording** permission prompt — approve it once in *System Settings → Privacy → Screen Recording* and you're done.
 
+### One-time: install the clickable `.app`
+```bash
+./bin/AGI-install-app
+```
+Puts `CORTEX.app` in `~/Applications`. Launch via **Spotlight (⌘Space → "CORTEX")** or drag it to your Dock. No more typing `./bin/AGI-ui` in a terminal. While the app is running, `⌘⇧A` toggles the window and `⌘⇧F` toggles fullscreen from anywhere.
+
+---
+
+## 🌐 Tier A — Web Dashboard (`/web`)
+
+```bash
+./bin/AGI-web              # or `/web` inside the CLI
+# → http://localhost:3737 (auto-opens in default browser)
+```
+
+Dashboard tabs:
+- **Overview** — counts + env health (HF, GitHub, Ollama), model in use, pid/uptime.
+- **Ask** — type a prompt, streams live output from `cortex.mjs -p` via SSE.
+- **Commands** — browsable + filterable list of every `/slash` command (scraped from `src/commands/tier*/*.ts`).
+- **Agents** — all 150+ specialist agents in `src/skills/agency/`.
+- **MCP** — each server in `.mcp.json` with READY / NEEDS ENV status.
+- **History** — last 50 prompts with timings + exit codes; click to re-run.
+
+Set `CORTEX_WEB_PORT=3939` or `CORTEX_AUTO_OPEN=false` to customise.
+
+---
+
+## 🎨 Tier A — Media & Diagrams
+
+| Command | What it does | Backend |
+|---|---|---|
+| `/image <prompt>` | Text → PNG (auto-opens) | HF FLUX.1-schnell (override `CORTEX_IMAGE_MODEL`) |
+| `/video <prompt>` | Text → MP4 | HF HunyuanVideo (override `CORTEX_VIDEO_MODEL`; may need pro tier) |
+| `/diagram <desc>` | Text → **Mermaid + Excalidraw + Draw.io** in `data/diagrams/` | Chat-completion → parsed |
+
+Direct Python usage (no slash command needed):
+```bash
+python3 python/cortex_media.py image "cyberpunk cat at sunset"
+python3 python/cortex_diagram.py "user signup flow with OAuth + 2FA"
+```
+
+---
+
+## 💻 Tier A — VS Code / Cursor extension
+
+Right-click any code → **Ask / Explain / Refactor / Fix with CORTEX**. See `apps/vscode-extension/README.md`.
+
+Dev-install (instant): open `apps/vscode-extension` in VS Code, press **F5**. Permanent-install:
+```bash
+cd apps/vscode-extension && npx @vscode/vsce package
+code --install-extension cortex-vscode-0.1.0.vsix
+# or: cursor --install-extension cortex-vscode-0.1.0.vsix
+```
+
+---
+
+## 🦙 Local-LLM fallback (Ollama — already wired)
+
+`python/smart_router.py` + `python/ollama_provider.py` auto-detect Ollama at `http://localhost:11434` and fall back there if HF is unreachable. Install Ollama + pull any model:
+```bash
+brew install ollama
+ollama pull llama3.2:3b
+ollama serve   # leaves it running on :11434
+```
+The dashboard's **Overview** tab shows an Ollama `●` indicator when it's reachable.
+
 ---
 
 ## 🏗 Project Structure

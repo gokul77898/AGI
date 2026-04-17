@@ -285,7 +285,7 @@ ipcMain.handle('screen:describe', async (_evt, { dataUrl }) => {
     const token = process.env.HF_TOKEN
     if (!token) { log('error', 'screen.vision', 'HF_TOKEN not set'); return { error: 'HF_TOKEN not set' } }
     // Use HF Inference API directly for vision (router doesn't support vision models)
-    const model = process.env.CORTEX_VISION_MODEL || 'Salesforce/blip-image-captioning-large'
+    const model = process.env.CORTEX_VISION_MODEL || 'nlpconnect/vit-gpt2-image-captioning'
     const t0 = Date.now()
     log('info', 'screen.vision', `POST api-inference.huggingface.co model=${model} body=${dataUrl.length}B`)
     const response = await fetch('https://api-inference.huggingface.co/models/' + model, {

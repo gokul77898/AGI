@@ -18,8 +18,12 @@
 ## ✨ Features
 
 - **47 custom slash commands** across 8 tiers — from smart commits to distributed tracing
+- **153 specialist AI agents** (engineering, marketing, security, design, testing, etc.) auto-loaded from `src/skills/agency/`
+- **10 MCP servers** for GitHub, Slack, Linear, Postgres, SQLite, Puppeteer, Fetch, Memory, Filesystem, Sequential Thinking
+- **Zero-command UX** — `CORTEX.md` auto-routes plain-English requests to the right capability
 - **Runs on HuggingFace** — bring your own free HF token, no vendor lock-in
 - **Full IDE pair-programming** — reads, edits, runs commands, spawns sub-agents
+- **Browser automation built-in** — Lightpanda + Scrapling + Puppeteer
 - **Git-native** — understands your repo, commits, PRs, bisects, merges
 - **Privacy-friendly** — all telemetry stubbed out, no data leaves your machine (except LLM calls)
 - **Mission 09: Brain-Swarm** — default boot mode with `zai-org/GLM-5:together`
@@ -37,21 +41,31 @@
 ### Install
 
 ```bash
-git clone https://github.com/gokul77898/AGI.git cortex
-cd cortex
+git clone https://github.com/gokul77898/Cortex.git
+cd Cortex
 bun install
 bun run build
 ```
 
 ### Configure
 
-Copy `.env.example` to `.env` and set:
+Copy `.env.example` to `.env`. Only **one key is required**; the rest are optional:
 
 ```bash
+# REQUIRED — the AI brain (free @ huggingface.co/settings/tokens)
 HF_TOKEN=hf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 HF_BASE_URL=https://router.huggingface.co/v1
 HF_MODEL_ID=zai-org/GLM-5:together
+
+# OPTIONAL — each unlocks one MCP server (skip anything you don't use)
+GITHUB_TOKEN=ghp_xxxxx                     # github.com/settings/tokens
+SLACK_BOT_TOKEN=xoxb-xxxxx                 # api.slack.com/apps
+SLACK_TEAM_ID=Txxxxxxxx
+LINEAR_API_KEY=lin_api_xxxxx               # linear.app/settings/api
+POSTGRES_CONNECTION_STRING=postgresql://user@localhost:5432/dbname
 ```
+
+> **6 MCPs work with zero config** (filesystem, puppeteer, fetch, memory, sequential-thinking, sqlite). The other 4 wait for their env tokens.
 
 ### Run
 
@@ -64,6 +78,65 @@ AGI
 # Print-once mode (non-interactive)
 ./cortex.mjs -p "refactor the auth module to use async/await"
 ```
+
+---
+
+## 🧠 Zero-Command UX
+
+You don't need to memorize slash commands. The file `CORTEX.md` at the repo root is auto-loaded into every session and teaches the AI to auto-route plain-English requests. Just type what you want:
+
+```
+fix all the TODOs in this project
+my auth is broken — something about JWT expiry
+dockerize this
+clean up my git branches
+document the python helpers
+ship this feature but don't push yet
+```
+
+The AI picks the right playbook from `CORTEX.md` and executes it. Slash commands are still available as shortcuts.
+
+---
+
+## 🔌 MCP Servers (10 registered)
+
+CORTEX registers **10 Model Context Protocol servers** in `.mcp.json`. They load on-demand via `npx`.
+
+### Zero-config MCPs (work immediately)
+| MCP | Capability |
+|---|---|
+| `filesystem` | Sandboxed FS access beyond the current directory |
+| `puppeteer` | Full browser automation + screenshots |
+| `fetch` | Web scraping + URL reading |
+| `memory` | Persistent cross-session knowledge graph |
+| `sequential-thinking` | Structured step-by-step reasoning |
+| `sqlite` | Direct SQLite access (`data/cortex.db`) |
+
+### Token-gated MCPs (set the env var to enable)
+| MCP | Env var | Capability |
+|---|---|---|
+| `github` | `GITHUB_TOKEN` | PRs, issues, releases, workflows |
+| `postgres` | `POSTGRES_CONNECTION_STRING` | Direct Postgres access |
+| `slack` | `SLACK_BOT_TOKEN` + `SLACK_TEAM_ID` | Post/read channels |
+| `linear` | `LINEAR_API_KEY` | Issues, projects, teams |
+
+Missing tokens don't break the CLI — those MCPs simply show as "failed" at startup and everything else runs normally.
+
+---
+
+## 👥 153 Specialist Agents
+
+The `src/skills/agency/` folder holds 153 expert agents auto-discovered by the skills loader. Each one is a named persona with its own system prompt. They're invoked implicitly by the CORTEX.md router, or explicitly via:
+
+```
+/engineering-backend-architect design a REST API for a blog
+/design-ui-designer suggest a color palette for a fintech app
+/testing-reality-checker are my tests actually meaningful?
+/marketing-content-strategist write 3 blog post ideas
+/blockchain-security-auditor top 5 ERC-20 vulnerabilities?
+```
+
+**Breakdown:** 29 marketing · 26 engineering · 10 specialized · 9 sales · 8 testing · 8 design · 7 paid-media · 6 support · 6 project · 5 product · 5 academic · 4 workflow · 30+ niche (blockchain, healthcare, compliance, XR, recruitment, etc.)
 
 ---
 

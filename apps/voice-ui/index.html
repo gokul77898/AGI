@@ -122,33 +122,63 @@
       font-style: italic;
     }
 
-    /* Mic bar */
-    .micbar {
-      padding: 14px;
+    /* Input bar (text + mic) */
+    .inputbar {
+      padding: 10px 12px;
       background: rgba(0,0,0,0.3);
       border-top: 1px solid rgba(255,255,255,0.06);
       display: flex;
-      align-items: center;
-      gap: 12px;
+      align-items: flex-end;
+      gap: 8px;
     }
-    .micbtn {
-      width: 54px; height: 54px;
+    textarea#textInput {
+      flex: 1;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      color: var(--fg);
+      padding: 10px 12px;
+      font-size: 13px;
+      font-family: inherit;
+      resize: none;
+      max-height: 120px;
+      min-height: 40px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      user-select: text;
+    }
+    textarea#textInput:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(125, 211, 252, 0.15);
+    }
+    textarea#textInput::placeholder { color: var(--muted); }
+
+    .iconbtn {
+      width: 40px; height: 40px;
       border-radius: 50%;
-      border: 2px solid rgba(255,255,255,0.15);
-      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
-      color: #0a0a14;
+      border: 1px solid rgba(255,255,255,0.15);
       cursor: pointer;
-      transition: all 0.2s;
-      font-size: 22px;
+      transition: all 0.15s;
+      font-size: 16px;
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
-      box-shadow: 0 4px 12px rgba(125, 211, 252, 0.3);
     }
-    .micbtn:hover { transform: scale(1.05); }
-    .micbtn:active { transform: scale(0.95); }
-    .micbtn.recording {
+    .iconbtn:hover { transform: scale(1.06); }
+    .iconbtn:active { transform: scale(0.94); }
+    .iconbtn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+    .iconbtn.send {
+      background: rgba(125, 211, 252, 0.15);
+      color: var(--accent);
+    }
+    .iconbtn.send:hover { background: rgba(125, 211, 252, 0.25); }
+    .iconbtn.mic {
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
+      color: #0a0a14;
+      box-shadow: 0 3px 10px rgba(125, 211, 252, 0.3);
+    }
+    .iconbtn.mic.recording {
       background: var(--danger);
       color: white;
       animation: rec 1s infinite;
@@ -158,25 +188,29 @@
       0%, 100% { box-shadow: 0 4px 12px rgba(239, 68, 68, 0.5); }
       50% { box-shadow: 0 4px 20px rgba(239, 68, 68, 0.8); }
     }
-    .statusline {
-      flex: 1;
+    .statusbar {
+      padding: 6px 14px 10px;
       display: flex;
-      flex-direction: column;
-      gap: 3px;
-      overflow: hidden;
+      align-items: center;
+      gap: 10px;
+      background: rgba(0,0,0,0.2);
+      border-top: 1px solid rgba(255,255,255,0.04);
+      min-height: 26px;
     }
     .hint {
-      font-size: 11px;
+      font-size: 10px;
       color: var(--muted);
       letter-spacing: 0.3px;
+      white-space: nowrap;
     }
     .transcript {
-      font-size: 12px;
-      color: var(--fg);
+      flex: 1;
+      font-size: 11px;
+      color: var(--accent);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      min-height: 16px;
+      font-style: italic;
     }
     .waves {
       display: flex;
@@ -224,7 +258,7 @@
 <body>
 <div id="app">
   <div class="titlebar">
-    <div class="title"><span class="dot"></span>CORTEX VOICE</div>
+    <div class="title"><span class="dot"></span>CORTEX AGI</div>
     <div class="controls">
       <button class="ctrl pin" id="pinBtn" title="Always on top"></button>
       <button class="ctrl min" id="minBtn" title="Minimize"></button>
@@ -233,20 +267,28 @@
   </div>
 
   <div class="pane" id="pane">
-    <div class="msg system">Press the mic or hold <b>Space</b> to speak. Press <b>⌘⇧A</b> globally to toggle this window.</div>
+    <div class="msg system">🎤 Hold <b>Space</b> or click mic to speak · ⌨️ Type below and press <b>Enter</b> · <b>⌘⇧A</b> toggles window globally</div>
   </div>
 
   <div class="toggles">
     <button class="toggle on" id="ttsToggle">🔊 TTS</button>
     <button class="toggle" id="continuousToggle">♾ Continuous</button>
+    <button class="toggle" id="clearBtn">🗑 Clear</button>
   </div>
 
-  <div class="micbar">
-    <button class="micbtn" id="micBtn" title="Hold to speak (or Space)">🎤</button>
-    <div class="statusline">
-      <div class="hint" id="hint">Click or hold Space to speak</div>
-      <div class="transcript" id="transcript"></div>
-    </div>
+  <div class="inputbar">
+    <textarea
+      id="textInput"
+      placeholder="Type a message, or press Space / click 🎤 to speak…"
+      rows="1"
+    ></textarea>
+    <button class="iconbtn send" id="sendBtn" title="Send (Enter)">➤</button>
+    <button class="iconbtn mic" id="micBtn" title="Hold to speak (Space)">🎤</button>
+  </div>
+
+  <div class="statusbar">
+    <div class="hint" id="hint">Type or speak — both use the same AGI brain</div>
+    <div class="transcript" id="transcript"></div>
     <div class="waves" id="waves">
       <div class="wave"></div><div class="wave"></div><div class="wave"></div><div class="wave"></div><div class="wave"></div>
     </div>
@@ -256,6 +298,8 @@
 <script>
   const pane = document.getElementById('pane')
   const micBtn = document.getElementById('micBtn')
+  const sendBtn = document.getElementById('sendBtn')
+  const textInput = document.getElementById('textInput')
   const waves = document.getElementById('waves')
   const hint = document.getElementById('hint')
   const transcriptEl = document.getElementById('transcript')
@@ -264,6 +308,7 @@
   const closeBtn = document.getElementById('closeBtn')
   const ttsToggle = document.getElementById('ttsToggle')
   const continuousToggle = document.getElementById('continuousToggle')
+  const clearBtn = document.getElementById('clearBtn')
 
   let ttsOn = true
   let continuous = false
@@ -292,6 +337,37 @@
     continuous = !continuous
     continuousToggle.classList.toggle('on', continuous)
   }
+  clearBtn.onclick = () => {
+    pane.innerHTML = ''
+    addMsg('system', 'Conversation cleared. Type or speak to start.')
+  }
+
+  // ─── Text input ──────────────────────────────────────────────
+  function autosize() {
+    textInput.style.height = 'auto'
+    textInput.style.height = Math.min(textInput.scrollHeight, 120) + 'px'
+  }
+  textInput.addEventListener('input', autosize)
+
+  async function submitText() {
+    const text = textInput.value.trim()
+    if (!text) return
+    textInput.value = ''
+    autosize()
+    sendBtn.disabled = true
+    addMsg('user', text)
+    await askAGI(text)
+    sendBtn.disabled = false
+    textInput.focus()
+  }
+  sendBtn.addEventListener('click', submitText)
+  textInput.addEventListener('keydown', (e) => {
+    // Enter = submit, Shift+Enter = newline
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      submitText()
+    }
+  })
 
   // ─── UI helpers ──────────────────────────────────────────────
   function addMsg(role, text = '') {
@@ -425,7 +501,9 @@
   micBtn.addEventListener('touchend', (e) => { e.preventDefault(); stopRecording() })
 
   document.addEventListener('keydown', (e) => {
-    if (e.code === 'Space' && !spaceDown && e.target.tagName !== 'INPUT') {
+    // Don't hijack Space while the user is typing in the textarea
+    const typing = e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT'
+    if (e.code === 'Space' && !spaceDown && !typing) {
       e.preventDefault()
       spaceDown = true
       startRecording()
@@ -433,10 +511,17 @@
     if (e.code === 'Escape') {
       stopRecording()
       window.speechSynthesis.cancel()
+      textInput.blur()
+    }
+    // Cmd+K or Cmd+L focuses text input
+    if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'l')) {
+      e.preventDefault()
+      textInput.focus()
     }
   })
   document.addEventListener('keyup', (e) => {
-    if (e.code === 'Space') {
+    const typing = e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT'
+    if (e.code === 'Space' && !typing) {
       spaceDown = false
       stopRecording()
     }
@@ -445,6 +530,9 @@
   // Prime the voice list (Chrome loads them async)
   window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices()
   window.speechSynthesis.getVoices()
+
+  // Auto-focus the text box so you can just start typing
+  window.addEventListener('load', () => textInput.focus())
 </script>
 </body>
 </html>

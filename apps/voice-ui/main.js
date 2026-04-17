@@ -139,7 +139,7 @@ function hfChat({ messages, model, stream = false, onChunk, stage = 'hf.chat' })
       model: resolvedModel,
       messages,
       stream,
-      max_tokens: 1024,
+      max_tokens: 4096,
       temperature: 0.4,
     })
     const t0 = Date.now()
@@ -211,7 +211,13 @@ function hfChat({ messages, model, stream = false, onChunk, stage = 'hf.chat' })
               log('error', stage, `api-error: ${j.error.message || JSON.stringify(j.error)}`)
               return reject(new Error(j.error.message || JSON.stringify(j.error)))
             }
-            const text = j.choices?.[0]?.message?.content || ''
+            const msg = j.choices?.[0]?.message || {}
+            // GLM-5 is a reasoning model — content may be empty, fall back to reasoning_content
+            let text = msg.content || ''
+            if (!text && msg.reasoning_content) {
+              text = msg.reasoning_content
+              log('info', stage, `using reasoning_content (${text.length} chars)`)
+            }
             const usage = j.usage || {}
             log('info', stage, `done ${ms}ms chars=${text.length} in=${usage.prompt_tokens ?? '?'}tok out=${usage.completion_tokens ?? '?'}tok`)
             resolve({ text })

@@ -85,7 +85,7 @@ ipcMain.handle('agi:ask', async (_evt, prompt) => {
   return new Promise((resolve) => {
     const child = spawn(AGI_BIN, argv, {
       cwd: REPO_ROOT,
-      env: { ...process.env, CORTEX_NONINTERACTIVE: '1' },
+      env: { ...process.env },
     })
     log('info', 'agi.pid', `pid=${child.pid}`)
     let out = ''

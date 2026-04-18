@@ -474,9 +474,24 @@
   })
 
   // ─── UI helpers ──────────────────────────────────────────────
+  function stripMarkdown(text) {
+    // Remove code blocks
+    text = text.replace(/```[\s\S]*?```/g, '')
+    // Remove inline code
+    text = text.replace(/`([^`]+)`/g, '$1')
+    // Remove markdown headers
+    text = text.replace(/^#{1,6}\s+/gm, '')
+    // Remove markdown bullets
+    text = text.replace(/^[-*+]\s+/gm, '• ')
+    // Remove numbered list markers
+    text = text.replace(/^\d+\.\s+/gm, '')
+    return text.trim()
+  }
+
   function addMsg(role, text = '') {
     const el = document.createElement('div')
     el.className = `msg ${role}`
+    if (role === 'agi') text = stripMarkdown(text)
     el.textContent = text
     pane.appendChild(el)
     pane.scrollTop = pane.scrollHeight
@@ -596,7 +611,9 @@
   window.cortex.onChunk((chunk) => {
     if (!currentAgiMsg) return
     const current = currentAgiMsg.textContent === 'Thinking…' ? '' : currentAgiMsg.textContent
-    currentAgiMsg.textContent = current + chunk.replace(/\x1b\[[0-9;]*[mGKHJ]/g, '')
+    // Strip ANSI codes and markdown for CLI-like output
+    const clean = stripMarkdown(chunk.replace(/\x1b\[[0-9;]*[mGKHJ]/g, ''))
+    currentAgiMsg.textContent = current + clean
     pane.scrollTop = pane.scrollHeight
   })
 

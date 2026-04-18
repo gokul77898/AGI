@@ -986,7 +986,7 @@ MIT — do whatever you want, just don't sue me.
 
 ## 🙏 Credits
 
-Built on the shoulders of the open-source **Claude Code CLI** fork, with extensive rewrites:
+Built on the shoulders of the open-source  with extensive rewrites:
 
 - 50+ custom AI commands (original)
 - Full HuggingFace provider integration (GLM-5 · Llama · DeepSeek · Qwen)

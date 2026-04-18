@@ -8,6 +8,9 @@
   "main": "./extension.js",
   "categories": ["AI", "Other"],
   "activationEvents": ["onStartupFinished"],
+  "repository": { "type": "git", "url": "https://github.com/gokul77898/Cortex.git" },
+  "license": "MIT",
+  "files": ["extension.js", "package.json", "README.md"],
   "contributes": {
     "commands": [
       { "command": "cortex.ask",      "title": "CORTEX: Ask about selection"    },

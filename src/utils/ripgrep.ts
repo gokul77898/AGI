@@ -57,13 +57,27 @@ const getRipgrepConfig = memoize((): RipgrepConfig => {
     }
   }
 
+  // Check if builtin ripgrep exists before committing to it
   const rgRoot = path.resolve(__dirname, 'vendor', 'ripgrep')
-  const command =
+  const builtinCommand =
     process.platform === 'win32'
       ? path.resolve(rgRoot, `${process.arch}-win32`, 'rg.exe')
       : path.resolve(rgRoot, `${process.arch}-${process.platform}`, 'rg')
 
-  return { mode: 'builtin', command, args: [] }
+  // If builtin ripgrep doesn't exist, fall back to system ripgrep
+  try {
+    const fs = require('fs') as typeof import('fs')
+    fs.statSync(builtinCommand)
+    return { mode: 'builtin', command: builtinCommand, args: [] }
+  } catch {
+    // Builtin ripgrep not found, try system ripgrep as fallback
+    const { cmd: systemPath } = findExecutable('rg', [])
+    if (systemPath !== 'rg') {
+      return { mode: 'system', command: 'rg', args: [] }
+    }
+    // Return builtin config anyway (will error at runtime with helpful message)
+    return { mode: 'builtin', command: builtinCommand, args: [] }
+  }
 })
 
 export function ripgrepCommand(): {

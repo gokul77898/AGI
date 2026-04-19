@@ -34,13 +34,8 @@
       "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
     },
     "sqlite": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@executeautomation/database-server",
-        "--sqlite",
-        "./data/cortex.db"
-      ]
+      "command": "uvx",
+      "args": ["mcp-server-sqlite", "--db-path", "./data/cortex.db"]
     },
     "postgres": {
       "command": "npx",
@@ -65,7 +60,6 @@
         "LINEAR_API_KEY": "${LINEAR_API_KEY}"
       }
     },
-
     "context7": {
       "command": "npx",
       "args": ["-y", "@upstash/context7-mcp"]
@@ -75,7 +69,8 @@
       "args": [
         "--from",
         "git+https://github.com/oraios/serena",
-        "serena-mcp-server",
+        "serena",
+        "start-mcp-server",
         "--context",
         "ide-assistant",
         "--project",
@@ -98,14 +93,9 @@
       "command": "npx",
       "args": ["-y", "@steipete/macos-automator-mcp@latest"]
     },
-
     "git": {
       "command": "uvx",
       "args": ["mcp-server-git", "--repository", "/Users/gokul/Documents/openclaude"]
-    },
-    "desktop-commander": {
-      "command": "npx",
-      "args": ["-y", "@wonderwhy-er/desktop-commander"]
     },
     "exa": {
       "command": "npx",
@@ -133,11 +123,6 @@
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-everything"]
     },
-
-    "arxiv": {
-      "command": "uvx",
-      "args": ["arxiv-mcp-server"]
-    },
     "wikipedia": {
       "command": "uvx",
       "args": ["wikipedia-mcp"]
@@ -154,7 +139,6 @@
       "command": "npx",
       "args": ["-y", "@kimtaeyoon83/mcp-server-youtube-transcript"]
     },
-
     "pandoc": {
       "command": "uvx",
       "args": ["mcp-pandoc"]
@@ -163,19 +147,14 @@
       "command": "uvx",
       "args": ["mcp-pdf-reader"]
     },
-    "markdown": {
-      "command": "uvx",
-      "args": ["mcp-server-markitdown"]
-    },
     "excel": {
       "command": "uvx",
-      "args": ["excel-mcp-server"]
+      "args": ["excel-mcp-server", "stdio"]
     },
     "repomix": {
       "command": "npx",
       "args": ["-y", "repomix", "--mcp"]
     },
-
     "docker": {
       "command": "uvx",
       "args": ["docker-mcp"]
@@ -184,23 +163,10 @@
       "command": "npx",
       "args": ["-y", "mcp-server-kubernetes"]
     },
-    "redis": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-redis", "redis://localhost:6379"]
-    },
-    "duckdb": {
-      "command": "uvx",
-      "args": ["mcp-server-motherduck"]
-    },
     "chroma": {
       "command": "uvx",
       "args": ["chroma-mcp"]
     },
-    "qdrant": {
-      "command": "uvx",
-      "args": ["mcp-server-qdrant"]
-    },
-
     "applescript": {
       "command": "npx",
       "args": ["-y", "@peakmojo/applescript-mcp"]
@@ -209,60 +175,21 @@
       "command": "npx",
       "args": ["-y", "mcp-server-apple-shortcuts"]
     },
-    "cli": {
-      "command": "uvx",
-      "args": ["cli-mcp-server"]
-    },
     "calculator": {
       "command": "npx",
       "args": ["-y", "@wrtnlabs/calculator-mcp"]
-    },
-    "screenshot": {
-      "command": "uvx",
-      "args": ["mcp-screenshot"]
-    },
-
-    "rss": {
-      "command": "uvx",
-      "args": ["mcp-rss"]
     },
     "html-to-markdown": {
       "command": "uvx",
       "args": ["markitdown-mcp"]
     },
-    "mermaid": {
-      "command": "npx",
-      "args": ["-y", "@peng-shawn/mermaid-mcp-server"]
-    },
     "osm": {
       "command": "uvx",
       "args": ["osm-mcp-server"]
     },
-    "weather": {
-      "command": "uvx",
-      "args": ["mcp-weather"]
-    },
-
-    "paperswithcode": {
-      "command": "uvx",
-      "args": ["paperswithcode-mcp"]
-    },
     "semantic-scholar": {
       "command": "uvx",
       "args": ["semantic-scholar-mcp"]
-    },
-    "openalex": {
-      "command": "uvx",
-      "args": ["openalex-mcp"]
-    },
-
-    "regex": {
-      "command": "npx",
-      "args": ["-y", "@f/mcp-regex-tester"]
-    },
-    "json-tools": {
-      "command": "uvx",
-      "args": ["mcp-json-tools"]
     }
   }
 }

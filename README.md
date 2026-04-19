@@ -21,6 +21,7 @@
   <a href="#-command-reference-50-total"><img src="https://img.shields.io/badge/Commands-50+-purple" /></a>
   <a href="#-153-specialist-agents"><img src="https://img.shields.io/badge/Agents-153-orange" /></a>
   <a href="#-mcp-servers-20-registered"><img src="https://img.shields.io/badge/MCP%20Servers-20-cyan" /></a>
+  <a href="#-quick-start"><img src="https://img.shields.io/badge/Install-1%20command-green" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow" /></a>
 </p>
 

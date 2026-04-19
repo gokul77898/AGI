@@ -10,9 +10,12 @@ import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-// Ensure uvx (Python MCP runner) is in PATH
+// Prefer project-local .venv/bin first (Python, uvx, uv), fall back to ~/.local/bin
+const __venvBin = resolve(__dirname, '.venv/bin');
 const __uvBin = resolve(process.env.HOME || '', '.local/bin');
-process.env.PATH = __uvBin + ':' + (process.env.PATH || '');
+process.env.PATH = __venvBin + ':' + __uvBin + ':' + (process.env.PATH || '');
+// Point VIRTUAL_ENV so Python subprocesses know they're in the venv
+process.env.VIRTUAL_ENV = resolve(__dirname, '.venv');
 
 // Block ALL browser opens by injecting a fake `open` binary first in PATH
 // (disabled if CORTEX_ALLOW_OPEN=1 is set)

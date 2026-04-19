@@ -31,3 +31,4 @@ __pycache__/
 # Local data (SQLite DB, briefs, logs)
 data/
 !data/.gitkeep
+.venv/

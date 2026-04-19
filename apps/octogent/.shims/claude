@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Octogent expects `claude` as the agent CLI. We route it to CORTEX.
+# CORTEX_REPO_ROOT is set by bin/cortex-octogent before launch.
+exec node "${CORTEX_REPO_ROOT:-/Users/gokul/Documents/openclaude}/cortex.mjs" "$@"

@@ -33,6 +33,12 @@ docker-compose-up: ## Start via docker-compose
 docker-compose-down: ## Stop docker-compose
 	docker-compose down
 
+octogent: ## Launch bundled Octogent multi-agent orchestrator (http://127.0.0.1:8787)
+	./bin/cortex-octogent
+
+octogent-build: ## (Re)build the bundled Octogent app
+	cd apps/octogent && pnpm install && pnpm build
+
 publish: ## Publish to npm
 	npm publish --access public
 

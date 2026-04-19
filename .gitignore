@@ -32,3 +32,11 @@ __pycache__/
 data/
 !data/.gitkeep
 .venv/
+
+# Octogent (bundled at apps/octogent/)
+.octogent/
+apps/octogent/node_modules/
+apps/octogent/**/node_modules/
+apps/octogent/dist/
+apps/octogent/**/dist/
+apps/octogent/pnpm-lock.yaml

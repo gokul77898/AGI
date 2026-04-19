@@ -5,13 +5,17 @@
   "type": "module",
   "bin": {
     "cortex": "./bin/cortex",
-    "cortex-tentacle": "./bin/cortex-tentacle"
+    "cortex-octogent": "./bin/cortex-octogent"
   },
   "files": [
     "bin/",
     "dist/cli.mjs",
-    "src/tentacles/",
-    "docs/TENTACLES.md",
+    "apps/octogent/dist/",
+    "apps/octogent/bin/",
+    "apps/octogent/package.json",
+    "apps/octogent/LICENSE",
+    "apps/octogent/.shims/",
+    "apps/octogent/scripts/",
     "README.md"
   ],
   "scripts": {

@@ -1,0 +1,60 @@
+#!/usr/bin/env node
+/**
+ * cortex-octogent — launch the bundled Octogent multi-agent orchestrator
+ * (apps/octogent/) with CORTEX wired in as the `claude` backend.
+ *
+ * Octogent is MIT-licensed and vendored at apps/octogent/. This wrapper:
+ *   1. Builds octogent on first run if dist/ is missing.
+ *   2. Prepends apps/octogent/.shims to PATH so its `claude` probe resolves
+ *      to the CORTEX CLI.
+ *   3. Execs apps/octogent/bin/octogent with whatever args the user passes.
+ */
+
+import { dirname, resolve } from 'node:path'
+import { existsSync } from 'node:fs'
+import { spawnSync, spawn } from 'node:child_process'
+import { fileURLToPath } from 'node:url'
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
+const REPO_ROOT = resolve(__dirname, '..')
+const OCTOGENT_DIR = resolve(REPO_ROOT, 'apps/octogent')
+const OCTOGENT_BIN = resolve(OCTOGENT_DIR, 'bin/octogent')
+const OCTOGENT_DIST = resolve(OCTOGENT_DIR, 'dist/api/cli.js')
+const SHIM_DIR = resolve(OCTOGENT_DIR, '.shims')
+
+if (!existsSync(OCTOGENT_BIN)) {
+  console.error(`cortex-octogent: apps/octogent is missing at ${OCTOGENT_DIR}`)
+  process.exit(1)
+}
+
+// Build on first run
+if (!existsSync(OCTOGENT_DIST)) {
+  console.log('cortex-octogent: building apps/octogent (first run, ~30s) ...')
+  const pnpm = spawnSync('pnpm', ['install'], { cwd: OCTOGENT_DIR, stdio: 'inherit' })
+  if (pnpm.status !== 0) {
+    console.error('cortex-octogent: pnpm install failed')
+    process.exit(pnpm.status || 1)
+  }
+  const build = spawnSync('pnpm', ['build'], { cwd: OCTOGENT_DIR, stdio: 'inherit' })
+  if (build.status !== 0) {
+    console.error('cortex-octogent: pnpm build failed')
+    process.exit(build.status || 1)
+  }
+}
+
+// Make the shim executable and ensure it's in PATH
+spawnSync('chmod', ['+x', resolve(SHIM_DIR, 'claude')], { stdio: 'ignore' })
+
+const env = {
+  ...process.env,
+  CORTEX_REPO_ROOT: REPO_ROOT,
+  PATH: `${SHIM_DIR}:${process.env.PATH || ''}`,
+}
+
+const child = spawn('node', [OCTOGENT_BIN, ...process.argv.slice(2)], {
+  cwd: process.cwd(),
+  stdio: 'inherit',
+  env,
+})
+
+child.on('exit', (code) => process.exit(code ?? 0))

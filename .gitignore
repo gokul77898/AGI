@@ -35,8 +35,22 @@ data/
 
 # Octogent (bundled at apps/octogent/)
 .octogent/
+.serena/
 apps/octogent/node_modules/
 apps/octogent/**/node_modules/
 apps/octogent/dist/
 apps/octogent/**/dist/
 apps/octogent/pnpm-lock.yaml
+
+# IDE configs (local-only)
+.claude/
+.windsurf/
+.vscode/
+
+# Build artifacts
+*.vsix
+apps/web-ui/bun.lock
+apps/web-ui/package-lock.json
+
+# macOS
+.DS_Store

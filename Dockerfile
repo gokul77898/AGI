@@ -17,9 +17,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     git curl ca-certificates build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Install bun (faster than npm)
+# Install bun (faster than npm) and pnpm (for Octogent)
 RUN curl -fsSL https://bun.sh/install | bash
 ENV PATH="/root/.bun/bin:${PATH}"
+RUN npm install -g pnpm
 
 # Copy package files first for better Docker layer caching
 COPY package.json bun.lock* package-lock.json* ./
@@ -30,6 +31,9 @@ COPY . .
 
 # Build the CLI
 RUN npm run build
+
+# Build Octogent
+RUN cd apps/octogent && pnpm install && pnpm build
 
 # =============================================================================
 # Runtime image (smaller)
@@ -63,6 +67,7 @@ COPY --from=builder /app/package.json /app/package.json
 COPY --from=builder /app/CORTEX.md /app/CORTEX.md
 COPY --from=builder /app/src /app/src
 COPY --from=builder /app/node_modules /app/node_modules
+COPY --from=builder /app/apps/octogent /app/apps/octogent
 
 # Make binaries executable
 RUN chmod +x /app/cortex.mjs /app/bin/* 2>/dev/null || true

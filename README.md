@@ -95,7 +95,7 @@ A fully-agentic AI coding assistant with **everything built-in** — 50+ slash c
 | 🌐 | **Browser automation** | Lightpanda + Scrapling + Puppeteer |
 | 🎨 | **4 user interfaces** | CLI · Electron floating UI · Web dashboard · VS Code extension |
 | 🔐 | **Privacy-friendly** | No telemetry · gitignored secrets · local-first where possible |
-| 🐙 | **Octogent integration** | Bundled multi-agent orchestrator (MIT, vendored at `apps/octogent/`) — tentacles, scoped context folders, todo.md, inter-agent messaging, parent/child Claude-style agents. Launch with `cortex-octogent` — uses CORTEX itself as the agent backend. |
+| 🐙 | **Octogent integration** | Bundled multi-agent orchestrator (MIT, vendored at `apps/octogent/`) — tentacles, scoped context folders, todo.md, inter-agent messaging, parent/child Claude-style agents. Built automatically with `make build`. Launch with `cortex-octogent` — uses CORTEX itself as the agent backend. |
 | 🚀 | **Mac `.app` bundle** | Installable via Spotlight — no terminal needed |
 
 ---

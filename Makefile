@@ -11,9 +11,11 @@ help: ## Show this help
 
 install: ## Install all deps (Python venv + Node + build)
 	./install.sh
+	cd apps/octogent && pnpm install
 
-build: ## Rebuild dist/cli.mjs
+build: ## Rebuild dist/cli.mjs and Octogent
 	npm run build
+	cd apps/octogent && pnpm build
 
 test: ## Run tests
 	npm run test

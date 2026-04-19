@@ -10,12 +10,7 @@
   "files": [
     "bin/",
     "dist/cli.mjs",
-    "apps/octogent/dist/",
-    "apps/octogent/bin/",
-    "apps/octogent/package.json",
-    "apps/octogent/LICENSE",
-    "apps/octogent/.shims/",
-    "apps/octogent/scripts/",
+    "apps/octogent/",
     "README.md"
   ],
   "scripts": {
@@ -53,7 +48,7 @@
     "doctor:report": "bun run scripts/system-check.ts --out reports/doctor-runtime.json",
     "hardening:check": "bun run smoke && bun run doctor:runtime",
     "hardening:strict": "bun run typecheck && bun run hardening:check",
-    "prepack": "npm run build"
+    "prepack": "npm run build && cd apps/octogent && pnpm install && pnpm build"
   },
   "dependencies": {
     "@alcalzone/ansi-tokenize": "0.3.0",

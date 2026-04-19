@@ -132,6 +132,137 @@
     "everything": {
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-everything"]
+    },
+
+    "arxiv": {
+      "command": "uvx",
+      "args": ["arxiv-mcp-server"]
+    },
+    "wikipedia": {
+      "command": "uvx",
+      "args": ["wikipedia-mcp"]
+    },
+    "hackernews": {
+      "command": "uvx",
+      "args": ["mcp-hn"]
+    },
+    "reddit": {
+      "command": "uvx",
+      "args": ["mcp-server-reddit"]
+    },
+    "youtube-transcript": {
+      "command": "npx",
+      "args": ["-y", "@kimtaeyoon83/mcp-server-youtube-transcript"]
+    },
+
+    "pandoc": {
+      "command": "uvx",
+      "args": ["mcp-pandoc"]
+    },
+    "pdf-reader": {
+      "command": "uvx",
+      "args": ["mcp-pdf-reader"]
+    },
+    "markdown": {
+      "command": "uvx",
+      "args": ["mcp-server-markitdown"]
+    },
+    "excel": {
+      "command": "uvx",
+      "args": ["excel-mcp-server"]
+    },
+    "repomix": {
+      "command": "npx",
+      "args": ["-y", "repomix", "--mcp"]
+    },
+
+    "docker": {
+      "command": "uvx",
+      "args": ["docker-mcp"]
+    },
+    "kubernetes": {
+      "command": "npx",
+      "args": ["-y", "mcp-server-kubernetes"]
+    },
+    "redis": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-redis", "redis://localhost:6379"]
+    },
+    "duckdb": {
+      "command": "uvx",
+      "args": ["mcp-server-motherduck"]
+    },
+    "chroma": {
+      "command": "uvx",
+      "args": ["chroma-mcp"]
+    },
+    "qdrant": {
+      "command": "uvx",
+      "args": ["mcp-server-qdrant"]
+    },
+
+    "applescript": {
+      "command": "npx",
+      "args": ["-y", "@peakmojo/applescript-mcp"]
+    },
+    "apple-shortcuts": {
+      "command": "npx",
+      "args": ["-y", "mcp-server-apple-shortcuts"]
+    },
+    "cli": {
+      "command": "uvx",
+      "args": ["cli-mcp-server"]
+    },
+    "calculator": {
+      "command": "npx",
+      "args": ["-y", "@wrtnlabs/calculator-mcp"]
+    },
+    "screenshot": {
+      "command": "uvx",
+      "args": ["mcp-screenshot"]
+    },
+
+    "rss": {
+      "command": "uvx",
+      "args": ["mcp-rss"]
+    },
+    "html-to-markdown": {
+      "command": "uvx",
+      "args": ["markitdown-mcp"]
+    },
+    "mermaid": {
+      "command": "npx",
+      "args": ["-y", "@peng-shawn/mermaid-mcp-server"]
+    },
+    "osm": {
+      "command": "uvx",
+      "args": ["osm-mcp-server"]
+    },
+    "weather": {
+      "command": "uvx",
+      "args": ["mcp-weather"]
+    },
+
+    "paperswithcode": {
+      "command": "uvx",
+      "args": ["paperswithcode-mcp"]
+    },
+    "semantic-scholar": {
+      "command": "uvx",
+      "args": ["semantic-scholar-mcp"]
+    },
+    "openalex": {
+      "command": "uvx",
+      "args": ["openalex-mcp"]
+    },
+
+    "regex": {
+      "command": "npx",
+      "args": ["-y", "@f/mcp-regex-tester"]
+    },
+    "json-tools": {
+      "command": "uvx",
+      "args": ["mcp-json-tools"]
     }
   }
 }

@@ -4,11 +4,14 @@
   "description": "CORTEX opened to any LLM — OpenAI, Gemini, DeepSeek, Ollama, and 200+ models",
   "type": "module",
   "bin": {
-    "anthropic": "./bin/cortex"
+    "cortex": "./bin/cortex",
+    "cortex-tentacle": "./bin/cortex-tentacle"
   },
   "files": [
     "bin/",
     "dist/cli.mjs",
+    "src/tentacles/",
+    "docs/TENTACLES.md",
     "README.md"
   ],
   "scripts": {

@@ -95,7 +95,8 @@ A fully-agentic AI coding assistant with **everything built-in** — 50+ slash c
 | 🌐 | **Browser automation** | Lightpanda + Scrapling + Puppeteer |
 | 🎨 | **4 user interfaces** | CLI · Electron floating UI · Web dashboard · VS Code extension |
 | 🔐 | **Privacy-friendly** | No telemetry · gitignored secrets · local-first where possible |
-| 🚀 | **Mac `.app` bundle** | Installable via Spotlight — no terminal needed |
+| � | **Tentacles** | Multi-agent orchestration — scoped context folders, todo.md, inter-agent messaging, child-agent spawning ([docs](docs/TENTACLES.md)) |
+| �🚀 | **Mac `.app` bundle** | Installable via Spotlight — no terminal needed |
 
 ---
 

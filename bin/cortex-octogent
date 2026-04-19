@@ -10,10 +10,11 @@
  *   3. Execs apps/octogent/bin/octogent with whatever args the user passes.
  */
 
-import { dirname, resolve } from 'node:path'
-import { existsSync } from 'node:fs'
+import { dirname, resolve, join } from 'node:path'
+import { existsSync, readFileSync } from 'node:fs'
 import { spawnSync, spawn } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
+import { platform } from 'node:os'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const REPO_ROOT = resolve(__dirname, '..')
@@ -61,3 +62,35 @@ const child = spawn('node', [OCTOGENT_BIN, ...process.argv.slice(2)], {
 })
 
 child.on('exit', (code) => process.exit(code ?? 0))
+
+// Auto-open browser once Octogent is ready — polls for runtime metadata file.
+// Disable with CORTEX_NO_OPEN=1.
+if (process.env.CORTEX_NO_OPEN !== '1') {
+  const runtimeMetaPath = join(process.cwd(), '.octogent', 'state', 'runtime.json')
+  const openCmd = platform() === 'darwin' ? 'open'
+    : platform() === 'win32' ? 'start'
+    : 'xdg-open'
+
+  let opened = false
+  const start = Date.now()
+  const poll = setInterval(() => {
+    if (opened || Date.now() - start > 20000) {
+      clearInterval(poll)
+      if (!opened) console.error('cortex-octogent: gave up waiting for UI to start')
+      return
+    }
+    if (!existsSync(runtimeMetaPath)) return
+    try {
+      const meta = JSON.parse(readFileSync(runtimeMetaPath, 'utf-8'))
+      if (meta?.apiBaseUrl) {
+        opened = true
+        clearInterval(poll)
+        console.error(`\n🚀 Opening Cortex UI: ${meta.apiBaseUrl}\n`)
+        const args = platform() === 'win32' ? ['', meta.apiBaseUrl] : [meta.apiBaseUrl]
+        spawn(openCmd, args, { stdio: 'ignore', detached: true }).unref()
+      }
+    } catch {
+      // metadata still being written — keep polling
+    }
+  }, 400)
+}

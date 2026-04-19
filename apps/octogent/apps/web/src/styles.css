@@ -20,3 +20,6 @@
 @import "./styles/console-canvas-code-intel.css";
 @import "./styles/console-canvas-prompts.css";
 @import "./styles/console-overrides-telemetry.css";
+
+/* Cortex theme — glassmorphism + 3D animations (must be last) */
+@import "./styles/cortex-theme.css";

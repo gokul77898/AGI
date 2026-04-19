@@ -20,7 +20,7 @@
   <a href="#-architecture"><img src="https://img.shields.io/badge/Architecture-Full%20Diagram-blue" /></a>
   <a href="#-command-reference-50-total"><img src="https://img.shields.io/badge/Commands-50+-purple" /></a>
   <a href="#-153-specialist-agents"><img src="https://img.shields.io/badge/Agents-153-orange" /></a>
-  <a href="#-mcp-servers-22-registered"><img src="https://img.shields.io/badge/MCP%20Servers-22-cyan" /></a>
+  <a href="#-mcp-servers-20-registered"><img src="https://img.shields.io/badge/MCP%20Servers-20-cyan" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow" /></a>
 </p>
 
@@ -37,7 +37,7 @@
 - [Zero-Command UX](#-zero-command-ux)
 - [Command Reference (50+ total)](#-command-reference-50-total)
 - [153 Specialist Agents](#-153-specialist-agents)
-- [MCP Servers (22 registered)](#-mcp-servers-22-registered)
+- [MCP Servers (20 registered)](#-mcp-servers-20-registered)
 - [Model Fallback + Offline Mode](#-model-fallback--offline-mode)
 - [Floating Desktop UI (Tier A)](#-tier-a--floating-desktop-ui-with-screen-watcher)
 - [Web Dashboard](#-tier-a--web-dashboard)
@@ -56,14 +56,14 @@
 
 ## 🎯 Why CORTEX
 
-A fully-agentic AI coding assistant with **everything built-in** — 50+ slash commands, 153 specialist agents, 22 MCP servers, browser automation, voice I/O, screen vision, local LLM fallback, and a floating desktop UI. Zero vendor lock-in. One HuggingFace token is the only requirement.
+A fully-agentic AI coding assistant with **everything built-in** — 50+ slash commands, 153 specialist agents, 20 MCP servers, browser automation, voice I/O, screen vision, local LLM fallback, and a floating desktop UI. Zero vendor lock-in. One HuggingFace token is the only requirement.
 
 | Problem | CORTEX's Solution |
 |---|---|
 | Claude Code / Cursor subscriptions are expensive | **Free** via HuggingFace GLM-5 |
 | Every AI tool does one thing | **50+ slash commands** across 9 tiers |
 | No personas / no specialists | **153 auto-loaded expert agents** |
-| No ecosystem hooks | **22 MCP servers** (GitHub, Slack, Linear, Context7, Serena, Playwright, Git, ...) |
+| No ecosystem hooks | **20 MCP servers** (GitHub, Slack, Linear, Context7, Serena, Playwright, Git, ...) |
 | Terminal-only or web-only | **CLI + Electron + Web + VS Code** — all four |
 | No offline mode | **Ollama fallback** wired in |
 | Can't see what you're doing | **Screen-watcher** with vision model |
@@ -81,7 +81,7 @@ A fully-agentic AI coding assistant with **everything built-in** — 50+ slash c
 | 🦙 | **Offline mode** | Ollama detected automatically at `localhost:11434` — zero config |
 | ⚡ | **50+ slash commands** | Smart commits, PR reviews, RAG, agents, voice, media, diagrams |
 | 👥 | **153 specialist agents** | Engineering · Marketing · Security · Design · Testing · Compliance · XR |
-| 🔌 | **22 MCP servers** | GitHub, Slack, Linear, Context7, Serena, Playwright, Jupyter, Git, Desktop-Commander, Exa, Tavily, Brave, Firecrawl, DuckDuckGo, Time, Everything, Postgres, SQLite, Puppeteer, Fetch, Memory, Filesystem, Seq-Thinking |
+| 🔌 | **20 MCP servers** | GitHub, Slack, Linear, Context7, Serena, Playwright, Jupyter, Git, Desktop-Commander, Exa, Tavily, DuckDuckGo, Time, Everything, Postgres, SQLite, Puppeteer, Fetch, Memory, Filesystem, Seq-Thinking |
 | 🎤 | **Voice I/O** | Whisper (STT) + Bark (TTS) + Web Speech API |
 | 👁 | **Screen vision** | Electron `desktopCapturer` → vision LLM every 10s |
 | 🖼 | **Media generation** | Images (FLUX.1), video (HunyuanVideo), diagrams (Mermaid/Excalidraw/Draw.io) |
@@ -155,7 +155,7 @@ graph TB
         EMBEDDINGS["📚 Embeddings<br/>HF sentence-transformers"]
     end
 
-    subgraph MCP["🔌 MCP SERVERS (22)"]
+    subgraph MCP["🔌 MCP SERVERS (20)"]
         direction LR
         MCP_GH["GitHub"]
         MCP_SLACK["Slack"]
@@ -176,8 +176,6 @@ graph TB
         MCP_DESK["Desktop-Commander"]
         MCP_EXA["Exa"]
         MCP_TAVILY["Tavily"]
-        MCP_BRAVE["Brave"]
-        MCP_FIRE["Firecrawl"]
         MCP_DUCK["DuckDuckGo"]
         MCP_TIME["Time"]
     end
@@ -245,7 +243,7 @@ graph TB
 | **Core** | Tools | Read/Write/Edit/Bash + MCP tool proxies |
 | **AI** | Smart Router | Provider selection by latency/cost/health |
 | **AI** | Vision / Voice / Embeddings | Multimodal + semantic-search pipelines |
-| **MCP** | 22 Servers | GitHub · Slack · Linear · Context7 · Serena · Playwright · Jupyter · Git · Desktop-Commander · Exa · Tavily · Brave · Firecrawl · DuckDuckGo · Time · Everything · Postgres · SQLite · Puppeteer · Fetch · Memory · FS · Seq-Thinking |
+| **MCP** | 20 Servers | GitHub · Slack · Linear · Context7 · Serena · Playwright · Jupyter · Git · Desktop-Commander · Exa · Tavily · DuckDuckGo · Time · Everything · Postgres · SQLite · Puppeteer · Fetch · Memory · FS · Seq-Thinking |
 | **Data** | pgvector · SQLite · Filesystem | RAG index, history, generated artefacts |
 | **Automation** | Daemon · Scheduler · Watcher | Background agentic loops |
 | **Browser** | Lightpanda · Scrapling · Puppeteer | Web scraping + automation |
@@ -554,9 +552,9 @@ Niche = blockchain · healthcare · compliance · XR · recruitment · legal · 
 
 ---
 
-## 🔌 MCP Servers (22 registered)
+## 🔌 MCP Servers (20 registered)
 
-CORTEX registers 22 Model Context Protocol servers in `.mcp.json`. They load on-demand via `npx` or `uvx`.
+CORTEX registers 20 Model Context Protocol servers in `.mcp.json`. They load on-demand via `npx` or `uvx`.
 
 ### 🎯 Top 5 Priority (Claude Code CLI level)
 
@@ -581,8 +579,6 @@ CORTEX registers 22 Model Context Protocol servers in `.mcp.json`. They load on-
 |---|---|---|
 | `exa` | Neural search (better than Google for code) | 1000 searches/month |
 | `tavily` | Optimized for LLM agents | 1000 queries/month |
-| `brave-search` | Brave search API | 2000 queries/month |
-| `firecrawl` | Web scraping at scale | 500 pages/month |
 | `duckduckgo` | Privacy search | 100% free |
 
 ### 🤖 Automation
@@ -624,8 +620,6 @@ CORTEX registers 22 Model Context Protocol servers in `.mcp.json`. They load on-
 | `linear` | `LINEAR_API_KEY` | Issues · projects · teams |
 | `exa` | `EXA_API_KEY` | Neural search |
 | `tavily` | `TAVILY_API_KEY` | LLM-optimized search |
-| `brave-search` | `BRAVE_API_KEY` | Brave search |
-| `firecrawl` | `FIRECRAWL_API_KEY` | Web scraping |
 
 Missing tokens don't break the CLI — those MCPs simply show *failed* at startup; everything else runs.
 
@@ -937,7 +931,7 @@ Measured on MacBook Air M2 · HF Router + Together provider · unless noted:
 
 - 50+ slash commands across 9 tiers
 - 153 specialist agents
-- 22 MCP servers (Claude Code CLI level)
+- 20 MCP servers (Claude Code CLI level)
 - 4 UIs (CLI · Electron · Web · VS Code)
 - Auto-failover (`:together` → `:novita` → Ollama)
 - Screen watcher + vision

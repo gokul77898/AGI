@@ -217,7 +217,7 @@ export const TentaclePod = ({
           {isEditingSkills && (
             <div className="deck-pod-skills-editor">
               {skillNames.length === 0 ? (
-                <span className="deck-pod-skills-empty">No Claude Code skills found.</span>
+                <span className="deck-pod-skills-empty">No Cortex skills found.</span>
               ) : (
                 <div className="deck-pod-skills-options">
                   {skillNames.map((skillName) => {

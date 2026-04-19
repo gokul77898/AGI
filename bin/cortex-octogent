@@ -45,10 +45,13 @@ if (!existsSync(OCTOGENT_DIST)) {
 // Make the shim executable and ensure it's in PATH
 spawnSync('chmod', ['+x', resolve(SHIM_DIR, 'claude')], { stdio: 'ignore' })
 
+// Enforce venv — same as cortex.mjs so every subprocess runs inside .venv
+const VENV_BIN = resolve(REPO_ROOT, '.venv/bin')
 const env = {
   ...process.env,
   CORTEX_REPO_ROOT: REPO_ROOT,
-  PATH: `${SHIM_DIR}:${process.env.PATH || ''}`,
+  VIRTUAL_ENV: resolve(REPO_ROOT, '.venv'),
+  PATH: `${SHIM_DIR}:${VENV_BIN}:${process.env.PATH || ''}`,
 }
 
 const child = spawn('node', [OCTOGENT_BIN, ...process.argv.slice(2)], {

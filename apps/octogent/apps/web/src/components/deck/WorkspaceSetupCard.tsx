@@ -14,7 +14,7 @@ type WorkspaceSetupCardProps = {
 
 const buildStepSummary = (stepId: WorkspaceSetupStepId, description: string) => {
   if (stepId === "create-tentacles") {
-    return "Launch Claude Code so it can plan and create the first tentacles.";
+    return "Launch Cortex so it can plan and create the first tentacles.";
   }
 
   return description;
@@ -58,7 +58,7 @@ export const WorkspaceSetupCard = ({
     <div className="workspace-setup-step-list">
       {(workspaceSetup?.steps ?? []).map((step) => {
         const isCreateTentaclesStep = step.id === "create-tentacles";
-        const buttonLabel = isCreateTentaclesStep ? "Launch Claude Code" : step.actionLabel;
+        const buttonLabel = isCreateTentaclesStep ? "Launch Cortex" : step.actionLabel;
         const isButtonDisabled = isCreateTentaclesStep ? isLaunchingAgent : isLoading;
         const isButtonRunning = isCreateTentaclesStep
           ? isLaunchingAgent

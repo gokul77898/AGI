@@ -112,6 +112,7 @@ graph TB
         ELECTRON["🪟 Electron App<br/>./bin/AGI-ui<br/><i>Floating · Always-on-top</i>"]
         WEB["🌐 Web Dashboard<br/>localhost:3737"]
         VSCODE["💻 VS Code Extension<br/>Right-click menu"]
+        OCTOGENT["🐙 Octogent<br/>./bin/cortex-octogent<br/><i>Multi-agent orchestrator</i>"]
     end
 
     subgraph CORE["⚙️ CORTEX CORE (TypeScript + Bun)"]
@@ -206,6 +207,7 @@ graph TB
     end
 
     USER --> CORE
+    OCTOGENT --> CORE
     ROUTER --> COMMANDS
     ROUTER --> AGENTS
     REPL --> ROUTER
@@ -875,6 +877,11 @@ cortex/
 │       ├── browser-disable.ts    # Prevents auto-launched browsers
 │       └── …
 ├── apps/
+│   ├── octogent/                 # Vendored multi-agent orchestrator (MIT)
+│   │   ├── apps/                 # Octogent web app + API
+│   │   ├── bin/octogent          # Octogent executable
+│   │   ├── .shims/claude         # Shim to route claude → cortex CLI
+│   │   └── dist/                 # Built Octogent (auto-built with make build)
 │   ├── voice-ui/                 # Electron floating UI (Tier A)
 │   │   ├── main.js               # Electron main process + HF chat + vision
 │   │   ├── preload.js            # IPC bridge
@@ -889,13 +896,15 @@ cortex/
 │   ├── cortex_media.py           # Image / video generation
 │   ├── cortex_diagram.py         # Mermaid / Excalidraw / Draw.io
 │   ├── cortex_security.py        # Security scanner
-│   └── cortex_db.py              # SQLite history / memory
+│   ├── cortex_db.py              # SQLite history / memory
+│   └── requirements.txt          # Python dependencies for venv
 ├── bin/
 │   ├── AGI                       # Symlink to cortex.mjs
 │   ├── AGI-ui                    # Launch Electron floating UI
 │   ├── AGI-web                   # Launch web dashboard
 │   ├── AGI-install-app           # Build macOS .app bundle
-│   └── cortex                    # Symlink
+│   ├── cortex                    # Symlink
+│   └── cortex-octogent           # Launch Octogent multi-agent orchestrator
 ├── scripts/
 │   ├── build.ts                  # Bun bundler (stubs 21 telemetry modules)
 │   ├── start-web.sh              # Dev server
@@ -904,9 +913,14 @@ cortex/
 │   ├── cortex.db                 # SQLite: history + memory
 │   └── diagrams/                 # Generated diagrams
 ├── logs/                         # Structured JSON logs
-├── .mcp.json                     # MCP server registry (10 servers)
+├── .mcp.json                     # MCP server registry (53 servers)
 ├── CORTEX.md                     # Zero-command UX router (auto-loaded)
-└── .env                          # Secrets (gitignored)
+├── .env                          # Secrets (gitignored)
+├── Dockerfile                    # Multi-stage Docker build
+├── docker-compose.yml            # Docker Compose orchestration
+├── .dockerignore                 # Docker build exclusions
+├── Makefile                      # Common commands (build, test, docker, etc.)
+└── install.sh                    # One-command installer (venv + deps + build)
 ```
 
 ---

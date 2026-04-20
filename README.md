@@ -20,7 +20,7 @@
   <a href="#-architecture"><img src="https://img.shields.io/badge/Architecture-Full%20Diagram-blue" /></a>
   <a href="#-command-reference-50-total"><img src="https://img.shields.io/badge/Commands-50+-purple" /></a>
   <a href="#-153-specialist-agents"><img src="https://img.shields.io/badge/Agents-153-orange" /></a>
-  <a href="#-mcp-servers-53-registered"><img src="https://img.shields.io/badge/MCP%20Servers-53-cyan" /></a>
+  <a href="#-mcp-servers-38-registered"><img src="https://img.shields.io/badge/MCP%20Servers-38-cyan" /></a>
   <a href="#-quick-start"><img src="https://img.shields.io/badge/Install-1%20command-green" /></a>
   <a href="#-docker"><img src="https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white" /></a>
   <a href="https://www.npmjs.com/package/@gitlawb/cortex"><img src="https://img.shields.io/badge/npm-%40gitlawb%2Fcortex-red?logo=npm" /></a>
@@ -36,11 +36,11 @@
 - [Architecture](#-architecture)
 - [Data Flow](#-data-flow)
 - [Quick Start](#-quick-start)
-- [Four Ways to Run It](#-four-ways-to-run-it)
+- [Five Ways to Run It](#-five-ways-to-run-it)
 - [Zero-Command UX](#-zero-command-ux)
 - [Command Reference (50+ total)](#-command-reference-50-total)
 - [153 Specialist Agents](#-153-specialist-agents)
-- [MCP Servers (53 registered)](#-mcp-servers-53-registered)
+- [MCP Servers (38 registered)](#-mcp-servers-38-registered)
 - [Model Fallback + Offline Mode](#-model-fallback--offline-mode)
 - [Floating Desktop UI (Tier A)](#-tier-a--floating-desktop-ui-with-screen-watcher)
 - [Web Dashboard](#-tier-a--web-dashboard)
@@ -59,14 +59,14 @@
 
 ## 🎯 Why CORTEX
 
-A fully-agentic AI coding assistant with **everything built-in** — 50+ slash commands, 153 specialist agents, 53 MCP servers, browser automation, voice I/O, screen vision, local LLM fallback, and a floating desktop UI. Zero vendor lock-in. One HuggingFace token is the only requirement.
+A fully-agentic AI coding assistant with **everything built-in** — 50+ slash commands, 153 specialist agents, 38 MCP servers, browser automation, voice I/O, screen vision, local LLM fallback, and a floating desktop UI. Zero vendor lock-in. One HuggingFace token is the only requirement.
 
 | Problem | CORTEX's Solution |
 |---|---|
 | Claude Code / Cursor subscriptions are expensive | **Free** via HuggingFace GLM-5 |
 | Every AI tool does one thing | **50+ slash commands** across 9 tiers |
 | No personas / no specialists | **153 auto-loaded expert agents** |
-| No ecosystem hooks | **53 MCP servers** (GitHub, Slack, Linear, Context7, Serena, Playwright, Git, ...) |
+| No ecosystem hooks | **38 MCP servers** (GitHub, Slack, Linear, Context7, Serena, Playwright, Git, ...) |
 | Terminal-only or web-only | **CLI + Electron + Web + VS Code** — all four |
 | No offline mode | **Ollama fallback** wired in |
 | Can't see what you're doing | **Screen-watcher** with vision model |
@@ -84,7 +84,7 @@ A fully-agentic AI coding assistant with **everything built-in** — 50+ slash c
 | 🦙 | **Offline mode** | Ollama detected automatically at `localhost:11434` — zero config |
 | ⚡ | **50+ slash commands** | Smart commits, PR reviews, RAG, agents, voice, media, diagrams |
 | 👥 | **153 specialist agents** | Engineering · Marketing · Security · Design · Testing · Compliance · XR |
-| 🔌 | **53 MCP servers** | GitHub, Slack, Linear, Context7, Serena, Playwright, Jupyter, Git, Desktop-Commander, Exa, Tavily, DuckDuckGo, Time, Everything, Postgres, SQLite, Puppeteer, Fetch, Memory, Filesystem, Seq-Thinking |
+| 🔌 | **38 MCP servers** | GitHub, Slack, Linear, Context7, Serena, Playwright, Jupyter, Git, Exa, Tavily, DuckDuckGo, Time, Everything, Postgres, SQLite, Puppeteer, Fetch, Memory, Filesystem, Seq-Thinking, Docker, Kubernetes, Chroma, Excel, Pandoc, PDF-Reader, Wikipedia, ArXiv, HackerNews, Reddit, YouTube-Transcript, RepoMix, OSM, AppleScript, Apple-Shortcuts, Automation-Mac, Calculator |
 | 🎤 | **Voice I/O** | Whisper (STT) + Bark (TTS) + Web Speech API |
 | 👁 | **Screen vision** | Electron `desktopCapturer` → vision LLM every 10s |
 | 🖼 | **Media generation** | Images (FLUX.1), video (HunyuanVideo), diagrams (Mermaid/Excalidraw/Draw.io) |
@@ -120,7 +120,7 @@ graph TB
         ROUTER["📋 CORTEX.md Router<br/><i>Zero-command UX · routes plain English → capability</i>"]
         REPL["🔁 REPL / Orchestrator<br/><i>src/entrypoints/cli.tsx</i>"]
 
-        subgraph COMMANDS["50+ Slash Commands (9 Tiers)"]
+        subgraph COMMANDS["50+ Slash Commands (9 Tiers + /octo UI launcher)"]
             T1["Tier 1 · Core (7)"]
             T2["Tier 2 · Productivity (8)"]
             T3["Tier 3 · Code Intelligence (7)"]
@@ -160,7 +160,7 @@ graph TB
         EMBEDDINGS["📚 Embeddings<br/>HF sentence-transformers"]
     end
 
-    subgraph MCP["🔌 MCP SERVERS (53)"]
+    subgraph MCP["🔌 MCP SERVERS (38)"]
         direction LR
         MCP_GH["GitHub"]
         MCP_SLACK["Slack"]
@@ -249,7 +249,7 @@ graph TB
 | **Core** | Tools | Read/Write/Edit/Bash + MCP tool proxies |
 | **AI** | Smart Router | Provider selection by latency/cost/health |
 | **AI** | Vision / Voice / Embeddings | Multimodal + semantic-search pipelines |
-| **MCP** | 53 Servers | GitHub · Slack · Linear · Context7 · Serena · Playwright · Jupyter · Git · Desktop-Commander · Exa · Tavily · DuckDuckGo · Time · Everything · Postgres · SQLite · Puppeteer · Fetch · Memory · FS · Seq-Thinking |
+| **MCP** | 38 Servers | GitHub · Slack · Linear · Context7 · Serena · Playwright · Jupyter · Git · Exa · Tavily · DuckDuckGo · Time · Everything · Postgres · SQLite · Puppeteer · Fetch · Memory · FS · Seq-Thinking + 18 open-source (Docker, K8s, Chroma, Excel, Pandoc, Wikipedia, ArXiv, ...) |
 | **Data** | pgvector · SQLite · Filesystem | RAG index, history, generated artefacts |
 | **Automation** | Daemon · Scheduler · Watcher | Background agentic loops |
 | **Browser** | Lightpanda · Scrapling · Puppeteer | Web scraping + automation |
@@ -406,28 +406,31 @@ CORTEX_FAST_MODEL=llama3.2:3b
 CORTEX_VISION_MODEL=moondream
 ```
 
-> **38 MCPs work with zero config** (filesystem · puppeteer · fetch · memory · sequential-thinking · sqlite · filesystem · git · github · slack · linear · context7 · serena · jupyter · postgres · excel · tavily · duckduckgo · time · everything · brave-search · puppeteer · fetch · memory · filesystem · filesystem · filesystem · filesystem · filesystem · filesystem · filesystem · filesystem · filesystem · filesystem · filesystem · filesystem · filesystem · filesystem · filesystem). Others activate when their env tokens are set.
+> **31 of 38 MCPs work with zero config** — filesystem, git, context7, serena, playwright, puppeteer, fetch, memory, sequential-thinking, sqlite, duckduckgo, time, everything, docker, kubernetes, chroma, excel, pandoc, pdf-reader, wikipedia, hackernews, reddit, youtube-transcript, semantic-scholar, repomix, osm, applescript, apple-shortcuts, automation-mac, calculator, html-to-markdown. The other **7 activate when their tokens are set**: `github` (GITHUB_TOKEN), `slack` (SLACK_BOT_TOKEN + SLACK_TEAM_ID), `linear` (LINEAR_API_KEY), `postgres` (POSTGRES_CONNECTION_STRING), `exa` (EXA_API_KEY), `tavily` (TAVILY_API_KEY), `jupyter` (JUPYTER_TOKEN).
 
 ### Run
 
 ```bash
-./cortex.mjs                                    # interactive CLI (auto-launches Octogent UI)
-./cortex.mjs -p "refactor auth to async/await"  # one-shot
+AGI                                             # interactive CLI (auto-launches Octogent UI)
+./cortex.mjs                                    # same thing, explicit path
+AGI -p "refactor auth to async/await"           # one-shot
+octo                                            # just open the Cortex (Octogent) UI in your browser
+octo --status                                   # check if Octogent is running
 ./bin/AGI-ui                                    # Electron floating UI
 ./bin/AGI-web                                   # web dashboard
 ./bin/cortex-octogent                           # Octogent multi-agent UI (auto-opens browser)
 ```
 
-> **Note**: Running `./cortex.mjs` or `AGI` automatically launches Octogent in the background and opens its UI in your browser. Set `CORTEX_NO_OCTOGENT=1` to disable auto-launch, or `CORTEX_NO_OPEN=1` to prevent browser auto-open.
+> **Note**: Running `AGI` (or `./cortex.mjs`) automatically launches Octogent in the background and opens its UI in your browser. Set `CORTEX_NO_OCTOGENT=1` to disable auto-launch, or `CORTEX_NO_OPEN=1` to prevent browser auto-open. Inside the CLI, type `/octo` to re-open the UI at any time.
 
 ---
 
-## 🎨 Four Ways to Run It
+## 🎨 Five Ways to Run It
 
 | Interface | Launch | Best For | Latency |
 |---|---|---|---|
-| **CLI** | `./cortex.mjs` | Full agentic workflows · all 50+ commands · all tools · auto-launches Octogent | 4-8s per step |
-| **Octogent UI** | `./bin/cortex-octogent` (auto-launched by CLI) | Multi-agent orchestration · tentacles · scoped context · todo.md · Cortex-branded glassmorphism UI | <2s |
+| **CLI** | `AGI` or `./cortex.mjs` | Full agentic workflows · all 50+ commands · all tools · auto-launches Octogent | 4-8s per step |
+| **Octogent UI** | `octo` (standalone) or `/octo` (in CLI) — auto-launched by `AGI` | Multi-agent orchestration · tentacles · scoped context · todo.md · Cortex-branded glassmorphism UI | <2s |
 | **Electron UI** | `./bin/AGI-ui` | Always-on-top floating chat · screen watcher · voice · hotkey `⌘⇧A` | <2s (Fast mode) |
 | **Web Dashboard** | `./bin/AGI-web` → `localhost:3737` | Browsable commands · agents · MCP status · history · SSE streaming | <2s |
 | **VS Code Extension** | Right-click → Ask/Explain/Refactor/Fix | In-editor assistance · same brain as CLI | 4-8s |
@@ -570,6 +573,16 @@ The AI picks the playbook from `CORTEX.md` and executes. Slash commands remain a
 **Tier 9 setup:** `pip install -r python/requirements-tier-s.txt` (once). RAG needs pgvector: `brew install pgvector`.
 </details>
 
+<details>
+<summary><strong>Utility · UI Launchers</strong></summary>
+
+| Command | Description |
+|---|---|
+| `/octo` `/octogent` `/ui` | Open the Cortex (Octogent) multi-agent UI in your browser. Auto-launches Octogent if not running. |
+
+Also available as a standalone shell command: `octo` (opens), `octo --status` (check), `octo --no-open` (launch only).
+</details>
+
 ---
 
 ## 👥 153 Specialist Agents
@@ -606,9 +619,9 @@ Niche = blockchain · healthcare · compliance · XR · recruitment · legal · 
 
 ---
 
-## 🔌 MCP Servers (53 registered)
+## 🔌 MCP Servers (38 registered)
 
-CORTEX registers 53 Model Context Protocol servers in `.mcp.json`. They load on-demand via `npx` or `uvx`.
+CORTEX registers 38 Model Context Protocol servers in `.mcp.json`. They load on-demand via `npx` or `uvx`. **31 work zero-config**; 7 activate when their env tokens are set.
 
 ### 🎯 Top 5 Priority (Claude Code CLI level)
 
@@ -908,7 +921,8 @@ cortex/
 │   ├── AGI-web                   # Launch web dashboard
 │   ├── AGI-install-app           # Build macOS .app bundle
 │   ├── cortex                    # Symlink
-│   └── cortex-octogent           # Launch Octogent multi-agent orchestrator
+│   ├── cortex-octogent           # Launch Octogent multi-agent orchestrator
+│   └── octo                      # Open the Cortex UI (launches Octogent if not running)
 ├── scripts/
 │   ├── build.ts                  # Bun bundler (stubs 21 telemetry modules)
 │   ├── start-web.sh              # Dev server
@@ -917,7 +931,7 @@ cortex/
 │   ├── cortex.db                 # SQLite: history + memory
 │   └── diagrams/                 # Generated diagrams
 ├── logs/                         # Structured JSON logs
-├── .mcp.json                     # MCP server registry (53 servers)
+├── .mcp.json                     # MCP server registry (38 servers)
 ├── CORTEX.md                     # Zero-command UX router (auto-loaded)
 ├── .env                          # Secrets (gitignored)
 ├── Dockerfile                    # Multi-stage Docker build
@@ -945,7 +959,7 @@ cortex/
 | **Vision** | Moondream · LLaVA (via Ollama) |
 | **Browser** | Lightpanda · Scrapling · Puppeteer |
 | **Data** | SQLite (better-sqlite3) · pgvector |
-| **MCP** | 10 servers via `npx @modelcontextprotocol/server-*` |
+| **MCP** | 38 servers via `npx` / `uvx` (see `.mcp.json`) |
 | **Build** | Bun bundler + custom telemetry-stub plugin |
 
 ---
@@ -1051,7 +1065,7 @@ Measured on MacBook Air M2 · HF Router + Together provider · unless noted:
 
 - 50+ slash commands across 9 tiers
 - 153 specialist agents
-- 53 MCP servers (Claude Code CLI level)
+- 38 MCP servers (Claude Code CLI level)
 - 4 UIs (CLI · Electron · Web · VS Code)
 - Auto-failover (`:together` → `:novita` → Ollama)
 - Screen watcher + vision
@@ -1100,7 +1114,7 @@ MIT — do whatever you want, just don't sue me.
 
 ## 🙏 Credits
 
-Built on the shoulders of the open-source  with extensive rewrites:
+Built on the shoulders of the open-source community with extensive rewrites:
 
 - 50+ custom AI commands (original)
 - Full HuggingFace provider integration (GLM-5 · Llama · DeepSeek · Qwen)
@@ -1108,7 +1122,7 @@ Built on the shoulders of the open-source  with extensive rewrites:
 - Web dashboard + VS Code extension
 - Smart multi-provider router with auto-failover
 - 153 specialist agents
-- 10 MCP server registry
+- 38 MCP server registry
 - Full telemetry & vendor-auth strip-out
 - Offline Ollama fallback chain
 - **Mission 09: Brain-Swarm** default boot theme

@@ -63,8 +63,8 @@ const child = spawn('node', [OCTOGENT_BIN, ...process.argv.slice(2)], {
   env,
 })
 
-const AUTO_OPEN = process.env.CORTEX_NO_OPEN !== '1'
-const openCmd = platform() === 'darwin' ? 'open'
+const AUTO_OPEN = process.env.CORTEX_NO_OPEN !== '1' && process.env.OCTOGENT_NO_OPEN !== '1'
+const openCmd = platform() === 'darwin' ? '/usr/bin/open'
   : platform() === 'win32' ? 'start'
   : 'xdg-open'
 

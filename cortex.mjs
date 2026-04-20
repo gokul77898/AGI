@@ -8,7 +8,8 @@ import { readFileSync, existsSync, mkdirSync, openSync, readdirSync } from 'fs';
 import { resolve, dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { spawnSync, spawn } from 'child_process';
-import { homedir } from 'os';
+import { homedir, platform } from 'os';
+import http from 'http';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const QUIET = process.env.CORTEX_QUIET === '1';
@@ -69,9 +70,8 @@ try {
 // ---------------------------------------------------------------------------
 // 3. Preflight — check venv, auto-launch Octogent in background, open browser
 // ---------------------------------------------------------------------------
+// Detect a currently running Octogent instance (via runtime.json written on startup)
 const detectRunningOctogent = () => {
-  // Octogent writes runtime.json into ~/.octogent/projects/<id>/state/runtime.json
-  // We scan them all and pick one whose PID is alive.
   const root = join(homedir(), '.octogent', 'projects');
   if (!existsSync(root)) return null;
   try {
@@ -89,6 +89,7 @@ const detectRunningOctogent = () => {
   return null;
 };
 
+// Spawn Octogent in the background
 const autoLaunchOctogent = () => {
   const octogentLauncher = resolve(__dirname, 'bin/cortex-octogent');
   const octogentDist = resolve(__dirname, 'apps/octogent/dist/api/cli.js');
@@ -99,8 +100,7 @@ const autoLaunchOctogent = () => {
   const outLog = openSync(join(logsDir, 'octogent.out.log'), 'a');
   const errLog = openSync(join(logsDir, 'octogent.err.log'), 'a');
 
-  // IMPORTANT: strip the browser-blocking `.bin` shim from PATH so Octogent
-  // can actually call `open`/`xdg-open`. venv bin stays prepended.
+  // Strip .bin shim from PATH so Octogent sub-commands resolve to real binaries.
   const blockedBin = resolve(__dirname, '.bin');
   const cleanPath = (process.env.PATH || '')
     .split(':')
@@ -115,10 +115,48 @@ const autoLaunchOctogent = () => {
       ...process.env,
       PATH: cleanPath,
       CORTEX_ALLOW_OPEN: '1',
+      OCTOGENT_NO_OPEN: '1', // We open the browser from the parent (this file) instead.
     },
   });
   child.unref();
   return child.pid;
+};
+
+// Poll an HTTP endpoint until it returns 2xx, then call the callback
+const waitUntilReady = (url, onReady, { timeoutMs = 30000, intervalMs = 400 } = {}) => {
+  const deadline = Date.now() + timeoutMs;
+  const tryOnce = () => {
+    const req = http.get(url, (res) => {
+      res.resume();
+      if (res.statusCode && res.statusCode >= 200 && res.statusCode < 500) {
+        onReady(url);
+      } else {
+        schedule();
+      }
+    });
+    req.on('error', schedule);
+    req.setTimeout(1500, () => { req.destroy(); schedule(); });
+  };
+  const schedule = () => {
+    if (Date.now() > deadline) return;
+    setTimeout(tryOnce, intervalMs);
+  };
+  tryOnce();
+};
+
+// Open a URL in the default browser, bypassing the .bin/open shim
+const openInBrowser = (url) => {
+  const plat = platform();
+  let cmd, args;
+  if (plat === 'darwin') { cmd = '/usr/bin/open'; args = [url]; }
+  else if (plat === 'win32') { cmd = 'cmd'; args = ['/c', 'start', '', url]; }
+  else { cmd = 'xdg-open'; args = [url]; }
+  try {
+    spawn(cmd, args, { stdio: 'ignore', detached: true }).unref();
+    log(`🌐 Opened Cortex UI in browser: ${url}`);
+  } catch (err) {
+    log(`⚠  Could not open browser automatically — visit ${url} manually`);
+  }
 };
 
 if (!QUIET && process.env.CORTEX_NO_PREFLIGHT !== '1') {
@@ -128,9 +166,11 @@ if (!QUIET && process.env.CORTEX_NO_PREFLIGHT !== '1') {
 
   let octogentRunning = detectRunningOctogent();
   let octogentStatus;
+  let urlToOpen = null;
 
   if (octogentRunning) {
     octogentStatus = `✓ running @ ${octogentRunning}`;
+    urlToOpen = octogentRunning;
   } else if (!octogentBuilt) {
     octogentStatus = '✗ not built (run: make build)';
   } else if (process.env.CORTEX_NO_OCTOGENT === '1') {
@@ -138,15 +178,25 @@ if (!QUIET && process.env.CORTEX_NO_PREFLIGHT !== '1') {
   } else {
     const pid = autoLaunchOctogent();
     octogentStatus = pid
-      ? `🚀 launching in background (pid ${pid}) — UI will auto-open`
+      ? `🚀 launching (pid ${pid}) — UI will auto-open at http://127.0.0.1:8787`
       : '✗ failed to launch';
+    if (pid) urlToOpen = 'http://127.0.0.1:8787';
   }
 
-  log('┌─ CORTEX preflight ──────────────────────────────────────────');
+  log('┌─ CORTEX preflight ──────────────────────────────');
   log(`│ venv:     ${venvActive ? '✓ active' : '✗ missing'}  (${__venvDir})`);
   log(`│ octogent: ${octogentStatus}`);
   log(`│ logs:     ${resolve(__dirname, 'logs/')} (cortex + octogent.out.log)`);
-  log('└─────────────────────────────────────────────────────────────');
+  log('└────────────────────────────────────────────');
+
+  // Wait for Octogent API to be ready, then open browser (bypasses .bin/open shim)
+  if (urlToOpen && process.env.CORTEX_NO_OPEN !== '1') {
+    waitUntilReady(urlToOpen, (readyUrl) => {
+      // Cache-bust so the user sees the latest Cortex-themed UI, not a stale cached copy
+      const bust = `${readyUrl}${readyUrl.includes('?') ? '&' : '?'}v=${Date.now()}`;
+      openInBrowser(bust);
+    });
+  }
 }
 
 // ---------------------------------------------------------------------------

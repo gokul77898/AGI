@@ -1,0 +1,150 @@
+#!/usr/bin/env node
+/**
+ * octo — open the Cortex (Octogent) multi-agent UI in your browser.
+ *
+ * If Octogent isn't running, this launches it first and then opens the
+ * browser once the API is responsive.
+ *
+ * Usage:
+ *   octo               # launch (if needed) + open browser
+ *   octo --no-open     # launch without opening browser
+ *   octo --status      # print status only
+ */
+import { existsSync, readFileSync, readdirSync, mkdirSync, openSync } from 'node:fs'
+import { dirname, resolve, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { spawn } from 'node:child_process'
+import { homedir, platform } from 'node:os'
+import http from 'node:http'
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
+const REPO_ROOT = resolve(__dirname, '..')
+
+const args = new Set(process.argv.slice(2))
+const NO_OPEN = args.has('--no-open') || process.env.CORTEX_NO_OPEN === '1'
+const STATUS_ONLY = args.has('--status')
+
+const detectRunning = () => {
+  const root = join(homedir(), '.octogent', 'projects')
+  if (!existsSync(root)) return null
+  try {
+    for (const entry of readdirSync(root)) {
+      const metaPath = join(root, entry, 'state', 'runtime.json')
+      if (!existsSync(metaPath)) continue
+      try {
+        const meta = JSON.parse(readFileSync(metaPath, 'utf-8'))
+        if (meta?.apiBaseUrl && meta?.pid) {
+          try {
+            process.kill(meta.pid, 0)
+            return meta.apiBaseUrl
+          } catch {}
+        }
+      } catch {}
+    }
+  } catch {}
+  return null
+}
+
+const launch = () => {
+  const launcher = resolve(REPO_ROOT, 'bin/cortex-octogent')
+  const dist = resolve(REPO_ROOT, 'apps/octogent/dist/api/cli.js')
+  if (!existsSync(launcher) || !existsSync(dist)) {
+    console.error('✗ Octogent is not built.')
+    console.error('  Run: cd apps/octogent && pnpm install && pnpm build')
+    process.exit(1)
+  }
+
+  const logsDir = resolve(REPO_ROOT, 'logs')
+  try { mkdirSync(logsDir, { recursive: true }) } catch {}
+  const outLog = openSync(join(logsDir, 'octogent.out.log'), 'a')
+  const errLog = openSync(join(logsDir, 'octogent.err.log'), 'a')
+
+  const blockedBin = resolve(REPO_ROOT, '.bin')
+  const cleanPath = (process.env.PATH || '')
+    .split(':')
+    .filter(p => p && p !== blockedBin)
+    .join(':')
+
+  const child = spawn('node', [launcher], {
+    cwd: REPO_ROOT,
+    detached: true,
+    stdio: ['ignore', outLog, errLog],
+    env: {
+      ...process.env,
+      PATH: cleanPath,
+      CORTEX_ALLOW_OPEN: '1',
+      OCTOGENT_NO_OPEN: '1',
+    },
+  })
+  child.unref()
+  return child.pid
+}
+
+const waitReady = (url, timeoutMs = 30000) =>
+  new Promise(resolve => {
+    const deadline = Date.now() + timeoutMs
+    const tryOnce = () => {
+      const req = http.get(url, res => {
+        res.resume()
+        if (res.statusCode && res.statusCode >= 200 && res.statusCode < 500) resolve(true)
+        else schedule()
+      })
+      req.on('error', schedule)
+      req.setTimeout(1500, () => { req.destroy(); schedule() })
+    }
+    const schedule = () => {
+      if (Date.now() > deadline) return resolve(false)
+      setTimeout(tryOnce, 400)
+    }
+    tryOnce()
+  })
+
+const openUrl = (url) => {
+  const plat = platform()
+  const [cmd, cmdArgs] =
+    plat === 'darwin' ? ['/usr/bin/open', [url]]
+    : plat === 'win32' ? ['cmd', ['/c', 'start', '', url]]
+    : ['xdg-open', [url]]
+  try {
+    spawn(cmd, cmdArgs, { stdio: 'ignore', detached: true }).unref()
+    return true
+  } catch {
+    return false
+  }
+}
+
+// ---- main ----
+let url = detectRunning()
+
+if (STATUS_ONLY) {
+  if (url) console.log(`✓ Octogent is running @ ${url}`)
+  else console.log('● Octogent is not running')
+  process.exit(0)
+}
+
+let launched = false
+if (!url) {
+  console.error('🚀 Launching Octogent in the background...')
+  launch()
+  launched = true
+  url = 'http://127.0.0.1:8787'
+}
+
+const ready = await waitReady(url)
+if (!ready) {
+  console.error(`⚠  Octogent did not respond within 30s — check logs/octogent.err.log`)
+  console.error(`   URL: ${url}`)
+  process.exit(1)
+}
+
+if (NO_OPEN) {
+  console.log(`✓ Cortex UI ready: ${url}`)
+} else {
+  const bust = `${url}${url.includes('?') ? '&' : '?'}v=${Date.now()}`
+  const opened = openUrl(bust)
+  if (opened) console.log(`🌐 Opened Cortex UI: ${bust}`)
+  else console.log(`⚠  Could not auto-open browser — visit ${url}`)
+}
+
+if (launched) console.log('   (Octogent started in background; logs/octogent.out.log)')
+else console.log('   (Octogent was already running)')

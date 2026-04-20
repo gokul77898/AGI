@@ -5,7 +5,8 @@
   "type": "module",
   "bin": {
     "cortex": "./bin/cortex",
-    "cortex-octogent": "./bin/cortex-octogent"
+    "cortex-octogent": "./bin/cortex-octogent",
+    "octo": "./bin/octo"
   },
   "files": [
     "bin/",

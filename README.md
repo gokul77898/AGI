@@ -404,7 +404,39 @@ POSTGRES_CONNECTION_STRING=postgresql://user@localhost:5432/dbname
 OLLAMA_HOST=http://localhost:11434
 CORTEX_FAST_MODEL=llama3.2:3b
 CORTEX_VISION_MODEL=moondream
+
+# OPTIONAL — Dual-model mode (GLM-5 plans, MiniMax executes)
+# When CORTEX_DUAL_MODEL=1, Cortex auto-picks the right model per request:
+#  * tool calls (Bash/Edit/Write/...) → Executor (MiniMax)
+#  * pure reasoning / planning        → Planner  (GLM-5)
+CORTEX_DUAL_MODEL=1
+CORTEX_PLANNER_MODEL=zai-org/GLM-5:together
+CORTEX_EXECUTOR_MODEL=MiniMaxAI/MiniMax-M2:novita
+HF_MODEL_FALLBACK=zai-org/GLM-5:novita
 ```
+
+### 🧠 Dual-Model Architecture (GLM-5 Planner + MiniMax Executor)
+
+```
+User input
+   ↓
+GLM-5 → Planner / Agent brain    (no tools — reasons about next step)
+   ↓
+Task breakdown (steps, tools, plan)
+   ↓
+MiniMax 2.5 → Executor           (tools enabled — code / commands / output)
+   ↓
+Code / commands / output
+   ↓
+MiniMax → Self-check             (lint / sanity)
+   ↓
+(Optional) GLM-5 → Re-plan if failure   (via HF_MODEL_FALLBACK on 5xx)
+```
+
+Turn it on with one env var: `CORTEX_DUAL_MODEL=1`. Each chat-completion request
+is auto-routed: if the agent loop is calling a tool → Executor; if it's
+producing a plan/reflection → Planner. Falls back to the single-model path when
+the env var is unset, so existing setups keep working.
 
 > **31 of 38 MCPs work with zero config** — filesystem, git, context7, serena, playwright, puppeteer, fetch, memory, sequential-thinking, sqlite, duckduckgo, time, everything, docker, kubernetes, chroma, excel, pandoc, pdf-reader, wikipedia, hackernews, reddit, youtube-transcript, semantic-scholar, repomix, osm, applescript, apple-shortcuts, automation-mac, calculator, html-to-markdown. The other **7 activate when their tokens are set**: `github` (GITHUB_TOKEN), `slack` (SLACK_BOT_TOKEN + SLACK_TEAM_ID), `linear` (LINEAR_API_KEY), `postgres` (POSTGRES_CONNECTION_STRING), `exa` (EXA_API_KEY), `tavily` (TAVILY_API_KEY), `jupyter` (JUPYTER_TOKEN).
 

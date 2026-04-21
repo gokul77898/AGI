@@ -828,8 +828,34 @@ class OpenAIShimMessages {
       params.system,
     )
 
+    // --- Dual-model routing (Planner / Executor) ---------------------------
+    // When CORTEX_DUAL_MODEL=1 is set, pick the model based on role:
+    //   - Executor (code-gen / tool-calling) when the request includes tools
+    //   - Planner  (reasoning / reflection)  when no tools are in the request
+    // Falls back to the originally resolved model when the env vars are not set
+    // or when dual-model routing is disabled.
+    const dualModelEnabled =
+      process.env.CORTEX_DUAL_MODEL === '1' ||
+      process.env.CORTEX_DUAL_MODEL?.toLowerCase() === 'true'
+    const plannerModel = process.env.CORTEX_PLANNER_MODEL
+    const executorModel = process.env.CORTEX_EXECUTOR_MODEL
+    const hasTools = Array.isArray(params.tools) && params.tools.length > 0
+    let selectedModel = request.resolvedModel
+    if (dualModelEnabled) {
+      if (hasTools && executorModel) {
+        selectedModel = executorModel
+      } else if (!hasTools && plannerModel) {
+        selectedModel = plannerModel
+      }
+      if (selectedModel !== request.resolvedModel) {
+        console.error(
+          `[cortex] dual-model: using ${hasTools ? 'executor' : 'planner'} = ${selectedModel}`,
+        )
+      }
+    }
+
     const body: Record<string, unknown> = {
-      model: request.resolvedModel,
+      model: selectedModel,
       messages: openaiMessages,
       stream: params.stream ?? false,
     }

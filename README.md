@@ -438,6 +438,33 @@ is auto-routed: if the agent loop is calling a tool → Executor; if it's
 producing a plan/reflection → Planner. Falls back to the single-model path when
 the env var is unset, so existing setups keep working.
 
+### 💓 Emotion Layer (tone-aware responses)
+
+Cortex can detect your emotional state from each message and adapt its tone
+like a human would — empathetic when you're stuck, concise when you're in a
+hurry, warm when you're happy.
+
+```bash
+CORTEX_EMOTION_LAYER=1     # local heuristic (zero cost, ~0.1ms/turn)
+# or
+CORTEX_EMOTION_LAYER=hf    # HuggingFace classifier (adds ~200ms/turn)
+CORTEX_EMOTION_DEBUG=1     # print detected emotion each turn (stderr)
+```
+
+**Detects 8 emotions:** `frustrated` · `angry` · `confused` · `urgent` ·
+`happy` · `curious` · `sad` · `anxious`.
+
+**How it works:** before every turn, `@src/services/emotion/detector.ts` scans
+the latest user message for signals (profanity, ALL-CAPS, `!!`, "doesn't
+work", "urgent", "thanks", "how do I", …). When confidence ≥ 0.25 a
+one-line tone hint is prepended to the system prompt, e.g.:
+
+> *"User is frustrated. Be empathetic in one short line ('got it — fixing
+> now'), then solve directly. No lectures, no filler, no long preambles."*
+
+Verified on 10 test cases — see the regression table in
+`@src/services/emotion/detector.ts`.
+
 > **31 of 38 MCPs work with zero config** — filesystem, git, context7, serena, playwright, puppeteer, fetch, memory, sequential-thinking, sqlite, duckduckgo, time, everything, docker, kubernetes, chroma, excel, pandoc, pdf-reader, wikipedia, hackernews, reddit, youtube-transcript, semantic-scholar, repomix, osm, applescript, apple-shortcuts, automation-mac, calculator, html-to-markdown. The other **7 activate when their tokens are set**: `github` (GITHUB_TOKEN), `slack` (SLACK_BOT_TOKEN + SLACK_TEAM_ID), `linear` (LINEAR_API_KEY), `postgres` (POSTGRES_CONNECTION_STRING), `exa` (EXA_API_KEY), `tavily` (TAVILY_API_KEY), `jupyter` (JUPYTER_TOKEN).
 
 ### Run

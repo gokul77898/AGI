@@ -35,6 +35,11 @@ import type { AgentDefinition } from '../tools/AgentTool/loadAgentsDir.js'
 import { EXIT_PLAN_MODE_V2_TOOL_NAME } from '../tools/ExitPlanModeTool/constants.js'
 import { TASK_OUTPUT_TOOL_NAME } from '../tools/TaskOutputTool/constants.js'
 import type { Message } from '../types/message.js'
+import {
+  detectEmotionLocal,
+  extractLatestUserText,
+  isEmotionLayerEnabled,
+} from '../services/emotion/detector.js'
 import { isAgentSwarmsEnabled } from './agentSwarmsEnabled.js'
 import {
   modelSupportsStructuredOutputs,
@@ -454,23 +459,48 @@ export function prependUserContext(
     return messages
   }
 
-  if (Object.entries(context).length === 0) {
-    return messages
+  // Emotion layer: detect user's emotional state from the latest user message
+  // and inject a one-line tone hint so the LLM responds like a human. Local
+  // heuristic only (zero extra API cost). To enable HF classifier instead, set
+  // CORTEX_EMOTION_LAYER=hf (adds ~200ms/turn). See services/emotion/detector.ts.
+  const emotionMode = isEmotionLayerEnabled()
+  let emotionMessage: Message | null = null
+  if (emotionMode === 'local') {
+    const userText = extractLatestUserText(messages)
+    if (userText) {
+      const res = detectEmotionLocal(userText)
+      if (res.label !== 'neutral' && res.hint && res.confidence >= 0.25) {
+        if (process.env.CORTEX_EMOTION_DEBUG === '1') {
+          console.error(
+            `[cortex] emotion-layer: ${res.label} (conf=${res.confidence.toFixed(2)}) signals=${res.signals.join(',')}`,
+          )
+        }
+        emotionMessage = createUserMessage({
+          content: `<system-reminder tone-hint="${res.label}">\n${res.hint}\n</system-reminder>\n`,
+          isMeta: true,
+        })
+      }
+    }
   }
 
-  return [
-    createUserMessage({
-      content: `<system-reminder>\nAs you answer the user's questions, you can use the following context:\n${Object.entries(
-        context,
-      )
-        .map(([key, value]) => `# ${key}\n${value}`)
-        .join('\n')}
+  if (Object.entries(context).length === 0) {
+    return emotionMessage ? [emotionMessage, ...messages] : messages
+  }
+
+  const contextMessage = createUserMessage({
+    content: `<system-reminder>\nAs you answer the user's questions, you can use the following context:\n${Object.entries(
+      context,
+    )
+      .map(([key, value]) => `# ${key}\n${value}`)
+      .join('\n')}
 
       IMPORTANT: this context may or may not be relevant to your tasks. You should not respond to this context unless it is highly relevant to your task.\n</system-reminder>\n`,
-      isMeta: true,
-    }),
-    ...messages,
-  ]
+    isMeta: true,
+  })
+
+  return emotionMessage
+    ? [emotionMessage, contextMessage, ...messages]
+    : [contextMessage, ...messages]
 }
 
 /**

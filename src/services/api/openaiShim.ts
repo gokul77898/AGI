@@ -1091,17 +1091,31 @@ class OpenAIShimMessages {
         response.status === 403 ||
         response.status === 429
       if (isRetryable && fallbackList.length > 0) {
-        const originalModel = body.model
+        const originalModel = String(body.model)
         const attempted: string[] = [`${originalModel}:${response.status}`]
+        // ANSI color helpers for terminal visibility
+        const RED = '\x1b[31m', YELLOW = '\x1b[33m', GREEN = '\x1b[32m', CYAN = '\x1b[36m', DIM = '\x1b[2m', BOLD = '\x1b[1m', RESET = '\x1b[0m'
+        const logFail = (model: string, status: number, provider: string) =>
+          process.stderr.write(`${RED}${BOLD}✗ ${provider} failed${RESET} ${DIM}│${RESET} ${model} ${DIM}(HTTP ${status})${RESET}\n`)
+        const logTry = (model: string, provider: string) =>
+          process.stderr.write(`${YELLOW}↻ trying fallback${RESET} ${DIM}│${RESET} ${CYAN}${provider}${RESET} → ${model}\n`)
+        const logSuccess = (model: string, provider: string) =>
+          process.stderr.write(`${GREEN}${BOLD}✓ using ${provider}${RESET} ${DIM}│${RESET} ${model}\n`)
+
+        logFail(originalModel, response.status, 'HF primary')
         for (const fbModel of fallbackList) {
           if (fbModel === body.model) continue
-          console.error(`[cortex] model ${body.model} failed (HTTP ${response.status}), retrying with fallback: ${fbModel}`)
+          logTry(fbModel, 'HF')
           body.model = fbModel
           fetchInit.body = JSON.stringify(body)
           const fallbackResp = await fetch(chatCompletionsUrl, fetchInit)
-          if (fallbackResp.ok) return fallbackResp
+          if (fallbackResp.ok) {
+            logSuccess(fbModel, 'HF fallback')
+            return fallbackResp
+          }
           const fbErr = await fallbackResp.text().catch(() => 'unknown')
           attempted.push(`${fbModel}:${fallbackResp.status}`)
+          logFail(fbModel, fallbackResp.status, 'HF fallback')
           // Keep trying next fallback if still retryable
           if (
             !(fallbackResp.status >= 500 && fallbackResp.status < 600) &&
@@ -1123,29 +1137,37 @@ class OpenAIShimMessages {
         const groqModel = process.env.CORTEX_GROQ_FALLBACK_MODEL || 'openai/gpt-oss-120b'
         const groqUrl = process.env.CORTEX_GROQ_FALLBACK_URL || 'https://api.groq.com/openai/v1'
         if (groqKey) {
-          console.error(`[cortex] all HF models failed, falling back to Groq (${groqModel})`)
+          logTry(groqModel, 'Groq')
           body.model = groqModel
           const groqInit = { ...fetchInit }
           groqInit.headers = { ...fetchInit.headers, Authorization: `Bearer ${groqKey}` }
           groqInit.body = JSON.stringify(body)
           const groqResp = await fetch(`${groqUrl}/chat/completions`, groqInit)
-          if (groqResp.ok) return groqResp
+          if (groqResp.ok) {
+            logSuccess(groqModel, 'Groq')
+            return groqResp
+          }
           const grErr = await groqResp.text().catch(() => 'unknown')
           attempted.push(`groq:${groqModel}:${groqResp.status}`)
-          console.error(`[cortex] Groq fallback failed (${groqResp.status}): ${grErr}`)
+          logFail(groqModel, groqResp.status, 'Groq')
+          void grErr
         }
 
         // Groq exhausted - try Ollama fallback if configured
         const ollamaUrl = process.env.CORTEX_OLLAMA_FALLBACK_URL || 'http://localhost:11434/v1'
         const ollamaModel = process.env.CORTEX_OLLAMA_FALLBACK_MODEL
         if (ollamaModel) {
-          console.error(`[cortex] all HF models failed, falling back to Ollama (${ollamaModel} @ ${ollamaUrl})`)
+          logTry(`${ollamaModel} @ ${ollamaUrl}`, 'Ollama (local)')
           body.model = ollamaModel
           const ollamaInit = { ...fetchInit }
           ollamaInit.headers = { ...fetchInit.headers, Authorization: 'Bearer ollama' }
           ollamaInit.body = JSON.stringify(body)
           const ollamaResp = await fetch(`${ollamaUrl}/chat/completions`, ollamaInit)
-          if (ollamaResp.ok) return ollamaResp
+          if (ollamaResp.ok) {
+            logSuccess(ollamaModel, 'Ollama (local)')
+            return ollamaResp
+          }
+          logFail(ollamaModel, ollamaResp.status, 'Ollama')
           const olErr = await ollamaResp.text().catch(() => 'unknown')
           throw APIError.generate(
             ollamaResp.status,

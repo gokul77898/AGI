@@ -405,6 +405,14 @@ OLLAMA_HOST=http://localhost:11434
 CORTEX_FAST_MODEL=llama3.2:3b
 CORTEX_VISION_MODEL=moondream
 
+# OPTIONAL — Multi-tier provider fallback chain
+# Cortex auto-falls-back when primary returns 401/403/429/5xx:
+#   HF primary  →  HF fallback list  →  Groq  →  Ollama (local)
+HF_MODEL_FALLBACK=zai-org/GLM-5:together,zai-org/GLM-5:novita
+GROQ_API_KEY=gsk_xxxxx
+CORTEX_GROQ_FALLBACK_MODEL=openai/gpt-oss-120b
+CORTEX_OLLAMA_FALLBACK_MODEL=llama3.2:3b
+
 # OPTIONAL — Dual-model mode (GLM-5 plans, MiniMax executes)
 # When CORTEX_DUAL_MODEL=1, Cortex auto-picks the right model per request:
 #  * tool calls (Bash/Edit/Write/...) → Executor (MiniMax)
@@ -412,8 +420,34 @@ CORTEX_VISION_MODEL=moondream
 CORTEX_DUAL_MODEL=1
 CORTEX_PLANNER_MODEL=zai-org/GLM-5:together
 CORTEX_EXECUTOR_MODEL=MiniMaxAI/MiniMax-M2:novita
-HF_MODEL_FALLBACK=zai-org/GLM-5:novita
 ```
+
+### 🪜 Multi-tier Fallback Chain
+
+Cortex automatically falls back when the primary provider returns
+`401`, `403`, `429`, or `5xx`. The chain is configurable end-to-end:
+
+```
+1. HF primary          (HF_MODEL_ID)
+   ↓ fails
+2. HF fallback list    (HF_MODEL_FALLBACK — comma-separated, tried in order)
+   ↓ all fail
+3. Groq                (GROQ_API_KEY + CORTEX_GROQ_FALLBACK_MODEL)
+   ↓ fails
+4. Ollama (local)      (CORTEX_OLLAMA_FALLBACK_MODEL — works offline)
+```
+
+Every step prints a colored status banner to the terminal so you always see
+which provider is serving the request:
+
+```
+✗ HF primary failed   │ moonshotai/Kimi-K2.6:together  (HTTP 403)
+↻ trying fallback     │ HF → zai-org/GLM-5:together
+✓ using HF fallback   │ zai-org/GLM-5:together
+```
+
+The active model also appears in the spinner next to the verb:
+`Twisting… · Kimi-K2.6`.
 
 ### 🧠 Dual-Model Architecture (GLM-5 Planner + MiniMax Executor)
 

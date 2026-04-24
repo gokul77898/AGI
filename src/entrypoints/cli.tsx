@@ -123,6 +123,53 @@ async function main(): Promise<void> {
   const { printStartupScreen } = await import('../components/StartupScreen.js')
   await printStartupScreen()
 
+  // Auto-start the shared-session server so teammates can join via URL / QR.
+  // Session-bound: every CLI start gets a fresh session id, so old invite links
+  // automatically stop working. Tunnel is default-on (tries cloudflared →
+  // localhost.run → serveo); opt out with CORTEX_NO_SHARE=1 or
+  // CORTEX_NO_SHARE_TUNNEL=1.
+  if (process.env.CORTEX_NO_SHARE !== '1') {
+    try {
+      const { ensureShareServer } = await import('../commands/share/share.js')
+      const handle = await ensureShareServer()
+      // @ts-expect-error - qrcode ships without bundled types
+      const { toString: qrToString } = await import('qrcode')
+      const DIM = '\x1b[2m', BOLD = '\x1b[1m', GREEN = '\x1b[32m', CYAN = '\x1b[36m', MAGENTA = '\x1b[35m', YELLOW = '\x1b[33m', RESET = '\x1b[0m'
+
+      const printBanner = async (url: string, scopeLabel: string) => {
+        const qr: string = await qrToString(url, { type: 'utf8', errorCorrectionLevel: 'L' })
+        process.stderr.write(
+          `\n${GREEN}${BOLD}● shared session ready${RESET}  ${DIM}scope:${RESET} ${scopeLabel}\n` +
+          `${DIM}  session id:${RESET} ${BOLD}${handle.sessionId}${RESET} ${DIM}(rotates every CLI start — old invites stop working)${RESET}\n` +
+          `  ${BOLD}Share this:${RESET}  ${MAGENTA}${url}${RESET}\n` +
+          `  ${DIM}Local:${RESET}       ${CYAN}${handle.url}${RESET}\n` +
+          `  ${DIM}LAN:${RESET}         ${CYAN}${handle.lanUrl}${RESET}\n` +
+          `  ${DIM}QR:${RESET}          ${CYAN}${handle.url}qr.png${RESET}  ${DIM}·${RESET}  ${CYAN}${handle.url}qr.svg${RESET}\n\n` +
+          qr.split('\n').filter((l: string) => l.length > 0).map((l: string) => '    ' + l).join('\n') + '\n' +
+          `  ${DIM}/share stop to end · /share to re-show this panel${RESET}\n\n`,
+        )
+      }
+
+      // Print LAN banner immediately, then upgrade to GLOBAL once the tunnel connects.
+      await printBanner(handle.shareUrl, `${YELLOW}LAN${RESET} ${DIM}(spinning up global tunnel…)${RESET}`)
+
+      if (process.env.CORTEX_NO_SHARE_TUNNEL !== '1') {
+        void handle.startTunnel().then(async (pub: string | null) => {
+          if (pub) {
+            await printBanner(handle.shareUrl, `${MAGENTA}${BOLD}GLOBAL${RESET} ${DIM}(anywhere in the world · ${handle.tunnelProvider})${RESET}`)
+          } else {
+            process.stderr.write(
+              `${YELLOW}⚠  Could not establish a global tunnel.${RESET} ${DIM}Teammates must be on the same LAN, or install a tunnel tool:${RESET}\n` +
+              `  ${CYAN}brew install cloudflared${RESET}  ${DIM}(recommended — HTTPS, no signup)${RESET}\n\n`,
+            )
+          }
+        })
+      }
+    } catch {
+      // swallow — share server is a non-critical convenience
+    }
+  }
+
   // For all other paths, load the startup profiler
   const {
     profileCheckpoint

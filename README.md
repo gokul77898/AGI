@@ -449,7 +449,35 @@ which provider is serving the request:
 The active model also appears in the spinner next to the verb:
 `Twisting… · Kimi-K2.6`.
 
-### 🧠 Dual-Model Architecture (GLM-5 Planner + MiniMax Executor)
+### � Shared Sessions — `/share` (multiplayer Cortex)
+
+Up to 4 teammates can join one Cortex session over your local network. Tasks
+run sequentially (one at a time) but everyone sees every message in real time
+— like Google Docs for a terminal coding session.
+
+```
+/share                 # start a shared session on your LAN
+/share --port 9900     # pick a specific port
+/share stop            # end the shared session
+```
+
+What you get:
+
+- a **Local** URL (`http://127.0.0.1:<port>`) for you
+- a **Network** URL (`http://<lan-ip>:<port>`) + QR code to share with teammates
+  on the same Wi-Fi / LAN
+- a lightweight web UI where teammates type messages or queue **tasks**
+- every teammate prompt tagged `[task]` shows up in your terminal so you, the
+  driver, can pick it up and run it in the real Cortex session
+
+Use it when:
+
+- you want pair / mob programming with 2–4 people
+- a reviewer wants to queue follow-up tasks without taking over your terminal
+- you want shared visibility; use `cortex swarm` instead when you need
+  parallel AI execution (up to 8 sub-agents per swarm).
+
+### �🧠 Dual-Model Architecture (GLM-5 Planner + MiniMax Executor)
 
 ```
 User input

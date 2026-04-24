@@ -10,7 +10,7 @@ export type ShareMessage = {
   user: string
   text: string
   ts: number
-  kind: 'msg' | 'system' | 'task' | 'result' | 'session_ended' | 'participant_join' | 'participant_leave' | 'queue_update' | 'activity'
+  kind: 'msg' | 'system' | 'task' | 'result' | 'session_ended' | 'participant_join' | 'participant_leave' | 'queue_update' | 'activity' | 'chat' | 'typing' | 'call_state'
   data?: any
 }
 
@@ -218,6 +218,344 @@ const renderNameEntryPage = (sessionId: string, token: string): string => `<!doc
     requestAnimationFrame(draw);
   };
   draw();
+})();
+</script>
+</body>
+</html>`
+
+const renderDashboard = (sessionId: string, token: string, createdAt: number): string => `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Cortex · Dashboard</title>
+<style>
+  :root { color-scheme: dark; --accent:#7ee787; --accent2:#58a6ff; --task:#bc8cff; --warn:#d29922; --danger:#f85149; }
+  * { box-sizing: border-box; }
+  html, body { margin:0; height:100%; overflow:hidden; font-family:ui-monospace,Menlo,Consolas,monospace; color:#e6edf3; }
+  body { background: radial-gradient(ellipse at 20% 10%, #0f1a1f 0%, #050607 60%, #000 100%); }
+  #bg { position:fixed; inset:0; z-index:0; opacity:0.55; pointer-events:none; }
+  .dashboard { position:relative; z-index:1; height:100vh; display:grid; grid-template-columns:280px 1fr 320px; grid-template-rows:auto 1fr auto; gap:0; }
+  
+  header { grid-column:1/-1; padding:14px 20px; backdrop-filter:blur(14px); background:rgba(8,10,14,0.55); border-bottom:1px solid rgba(255,255,255,0.06); display:flex; gap:14px; align-items:center; }
+  header .brand { display:flex; gap:10px; align-items:center; font-weight:700; font-size:14px; letter-spacing:0.04em; }
+  header .dot { width:10px; height:10px; border-radius:50%; background:var(--accent); box-shadow:0 0 14px var(--accent); animation:pulse 2s ease-in-out infinite; }
+  @keyframes pulse { 50% { transform:scale(1.3); opacity:0.6; } }
+  header .brand span.g { background:linear-gradient(90deg,var(--accent),var(--accent2),var(--task)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  header .sid { font-size:11px; color:#6e7681; letter-spacing:0.06em; margin-left:auto; }
+  
+  .sidebar { padding:16px; background:rgba(8,10,14,0.4); border-right:1px solid rgba(255,255,255,0.06); overflow-y:auto; }
+  .sidebar h3 { margin:0 0 12px; font-size:12px; color:var(--accent); letter-spacing:0.06em; text-transform:uppercase; }
+  .participant-card { background:rgba(17,21,26,0.6); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:12px; margin-bottom:10px; display:flex; gap:10px; align-items:center; }
+  .participant-avatar { width:36px; height:36px; border-radius:50%; background:linear-gradient(135deg,var(--accent),var(--accent2)); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; }
+  .participant-info { flex:1; min-width:0; }
+  .participant-name { font-weight:600; font-size:12px; margin-bottom:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .participant-status { font-size:10px; color:#8b949e; }
+  .participant-status.typing { color:var(--accent); }
+  .typing-indicator { display:inline-flex; gap:2px; align-items:center; }
+  .typing-indicator span { width:4px; height:4px; border-radius:50%; background:var(--accent); animation:typing 1.4s ease-in-out infinite; }
+  .typing-indicator span:nth-child(2) { animation-delay:0.2s; }
+  .typing-indicator span:nth-child(3) { animation-delay:0.4s; }
+  @keyframes typing { 0%,60%,100% { transform:translateY(0); } 30% { transform:translateY(-4px); } }
+  
+  .main { display:grid; grid-template-rows:1fr auto; gap:0; overflow:hidden; }
+  .visualization { padding:20px; overflow-y:auto; position:relative; }
+  .queue-panel { background:rgba(8,10,14,0.55); border-top:1px solid rgba(255,255,255,0.06); padding:12px 20px; }
+  .queue-panel h3 { margin:0 0 10px; font-size:11px; color:var(--warn); letter-spacing:0.06em; text-transform:uppercase; }
+  .queue-items { display:flex; gap:8px; flex-wrap:wrap; }
+  .queue-item { background:rgba(210,153,34,0.15); border:1px solid rgba(210,153,34,0.3); padding:6px 12px; border-radius:6px; font-size:11px; display:flex; gap:6px; align-items:center; }
+  .queue-item.active { background:rgba(126,231,135,0.15); border-color:var(--accent); }
+  .queue-item .badge { width:6px; height:6px; border-radius:50%; background:var(--warn); }
+  .queue-item.active .badge { background:var(--accent); }
+  
+  .right-panel { display:grid; grid-template-rows:auto 1fr auto; gap:0; background:rgba(8,10,14,0.4); border-left:1px solid rgba(255,255,255,0.06); }
+  .call-panel { padding:16px; background:rgba(17,21,26,0.4); border-bottom:1px solid rgba(255,255,255,0.06); }
+  .call-panel h3 { margin:0 0 12px; font-size:12px; color:var(--accent2); letter-spacing:0.06em; text-transform:uppercase; }
+  .call-btn { width:100%; padding:10px; border:0; border-radius:8px; cursor:pointer; font-weight:600; font-size:12px; transition:all 0.2s; }
+  .call-btn.start { background:linear-gradient(135deg,var(--accent),#2ea043); color:#fff; }
+  .call-btn.end { background:linear-gradient(135deg,var(--danger),#da3633); color:#fff; }
+  .call-btn:disabled { opacity:0.5; cursor:not-allowed; }
+  .call-status { margin-top:10px; font-size:11px; color:#8b949e; text-align:center; }
+  .call-status.active { color:var(--accent); }
+  
+  .chat-panel { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+  .chat-messages { flex:1; overflow-y:auto; padding:12px; }
+  .chat-messages::-webkit-scrollbar { width:6px; }
+  .chat-messages::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.1); border-radius:3px; }
+  .chat-msg { margin-bottom:8px; padding:8px 10px; background:rgba(17,21,26,0.6); border-radius:6px; font-size:12px; }
+  .chat-msg .sender { font-weight:600; font-size:11px; color:var(--accent2); margin-bottom:2px; }
+  .chat-msg .text { color:#e6edf3; line-height:1.4; }
+  .chat-input-area { padding:12px; background:rgba(8,10,14,0.55); border-top:1px solid rgba(255,255,255,0.06); }
+  .chat-input { width:100%; background:rgba(11,13,16,0.8); color:#e6edf3; border:1px solid rgba(255,255,255,0.12); border-radius:6px; padding:10px 12px; font-size:12px; resize:none; min-height:38px; max-height:80px; outline:none; transition:all 0.2s; }
+  .chat-input:focus { border-color:var(--accent); }
+  .chat-input-area button { margin-top:8px; width:100%; padding:8px; border:0; border-radius:6px; background:linear-gradient(135deg,var(--accent2),#3b82f6); color:#fff; font-weight:600; font-size:11px; cursor:pointer; }
+  
+  .commands-panel { padding:12px; background:rgba(8,10,14,0.55); border-top:1px solid rgba(255,255,255,0.06); }
+  .commands-panel h3 { margin:0 0 10px; font-size:11px; color:var(--task); letter-spacing:0.06em; text-transform:uppercase; }
+  .command-msg { margin-bottom:6px; padding:6px 8px; background:rgba(188,140,255,0.1); border-left:2px solid var(--task); border-radius:4px; font-size:11px; }
+  .command-msg .sender { font-weight:600; color:var(--task); }
+  
+  @media (max-width: 1024px) {
+    .dashboard { grid-template-columns:1fr; grid-template-rows:auto auto 1fr auto; }
+    .sidebar { display:none; }
+    .right-panel { grid-row:2; grid-column:1; height:200px; }
+    .main { grid-row:3; grid-column:1; }
+  }
+</style>
+</head>
+<body>
+  <canvas id="bg"></canvas>
+  <div class="dashboard">
+    <header>
+      <div class="brand"><span class="dot"></span>CORTEX <span class="g">Dashboard</span></div>
+      <div class="sid">session · ${sessionId.slice(0, 8)}</div>
+    </header>
+    
+    <div class="sidebar">
+      <h3>Participants</h3>
+      <div id="participants"></div>
+    </div>
+    
+    <div class="main">
+      <div class="visualization">
+        <canvas id="viz"></canvas>
+      </div>
+      <div class="queue-panel">
+        <h3>Message Queue</h3>
+        <div class="queue-items" id="queue"></div>
+      </div>
+    </div>
+    
+    <div class="right-panel">
+      <div class="call-panel">
+        <h3>Voice Call</h3>
+        <button id="callBtn" class="call-btn start">Start Call</button>
+        <div class="call-status" id="callStatus">Not in call</div>
+      </div>
+      
+      <div class="chat-panel">
+        <div class="chat-messages" id="chatMessages"></div>
+        <div class="chat-input-area">
+          <textarea id="chatInput" class="chat-input" placeholder="Type a message..."></textarea>
+          <button id="sendChat">Send</button>
+        </div>
+      </div>
+      
+      <div class="commands-panel">
+        <h3>Cortex Commands</h3>
+        <div id="commandMessages"></div>
+      </div>
+    </div>
+  </div>
+<script>
+(() => {
+  const TOKEN = ${JSON.stringify(token)};
+  const sessionId = ${JSON.stringify(sessionId)};
+  const participantsEl = document.getElementById('participants');
+  const queueEl = document.getElementById('queue');
+  const chatMessages = document.getElementById('chatMessages');
+  const commandMessages = document.getElementById('commandMessages');
+  const chatInput = document.getElementById('chatInput');
+  const callBtn = document.getElementById('callBtn');
+  const callStatus = document.getElementById('callStatus');
+  
+  let participants = [];
+  let queue = [];
+  let activeUser = null;
+  let inCall = false;
+  let myName = 'dashboard-' + Math.random().toString(36).slice(2,6);
+  let typingTimeout = null;
+  
+  // 3D Visualization
+  const vizCanvas = document.getElementById('viz');
+  const vizCtx = vizCanvas.getContext('2d');
+  let vizW = 0, vizH = 0;
+  const resizeViz = () => {
+    const rect = vizCanvas.parentElement.getBoundingClientRect();
+    vizW = rect.width; vizH = rect.height;
+    vizCanvas.width = vizW; vizCanvas.height = vizH;
+  };
+  resizeViz();
+  window.addEventListener('resize', resizeViz);
+  
+  const nodes = Array.from({length:8}, () => ({
+    x: Math.random() * vizW, y: Math.random() * vizH,
+    vx: (Math.random() - 0.5) * 0.5, vy: (Math.random() - 0.5) * 0.5,
+    name: 'node-' + Math.floor(Math.random() * 1000),
+    status: 'idle'
+  }));
+  
+  const drawViz = () => {
+    vizCtx.clearRect(0, 0, vizW, vizH);
+    vizCtx.fillStyle = 'rgba(126, 231, 135, 0.3)';
+    
+    nodes.forEach(node => {
+      node.x += node.vx; node.y += node.vy;
+      if (node.x < 20 || node.x > vizW - 20) node.vx *= -1;
+      if (node.y < 20 || node.y > vizH - 20) node.vy *= -1;
+      
+      vizCtx.beginPath();
+      vizCtx.arc(node.x, node.y, 15, 0, Math.PI * 2);
+      vizCtx.fillStyle = node.status === 'active' ? 'rgba(126, 231, 135, 0.6)' : 'rgba(88, 166, 255, 0.3)';
+      vizCtx.fill();
+      vizCtx.strokeStyle = node.status === 'active' ? '#7ee787' : '#58a6ff';
+      vizCtx.stroke();
+      
+      vizCtx.fillStyle = '#e6edf3';
+      vizCtx.font = '10px monospace';
+      vizCtx.textAlign = 'center';
+      vizCtx.fillText(node.name, node.x, node.y + 25);
+    });
+    
+    // Draw connections
+    vizCtx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        const dx = nodes[i].x - nodes[j].x;
+        const dy = nodes[i].y - nodes[j].y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 150) {
+          vizCtx.beginPath();
+          vizCtx.moveTo(nodes[i].x, nodes[i].y);
+          vizCtx.lineTo(nodes[j].x, nodes[j].y);
+          vizCtx.stroke();
+        }
+      }
+    }
+    
+    requestAnimationFrame(drawViz);
+  };
+  drawViz();
+  
+  // Background particles
+  const bgCanvas = document.getElementById('bg');
+  const bgCtx = bgCanvas.getContext('2d');
+  let bgW = 0, bgH = 0;
+  const resizeBg = () => { bgW = window.innerWidth; bgH = window.innerHeight; bgCanvas.width = bgW; bgCanvas.height = bgH; };
+  resizeBg();
+  window.addEventListener('resize', resizeBg);
+  const pts = Array.from({length:60}, () => ({ x:Math.random()*bgW, y:Math.random()*bgH, vx:(Math.random()-0.5)*0.5, vy:(Math.random()-0.5)*0.5 }));
+  const drawBg = () => {
+    bgCtx.clearRect(0,0,bgW,bgH);
+    bgCtx.fillStyle = 'rgba(126,231,135,0.3)';
+    pts.forEach(p => { p.x += p.vx; p.y += p.vy; if(p.x<0||p.x>bgW)p.vx*=-1; if(p.y<0||p.y>bgH)p.vy*=-1; bgCtx.beginPath(); bgCtx.arc(p.x,p.y,2,0,Math.PI*2); bgCtx.fill(); });
+    requestAnimationFrame(drawBg);
+  };
+  drawBg();
+  
+  const renderParticipants = () => {
+    participantsEl.innerHTML = participants.map(p => \`
+      <div class="participant-card">
+        <div class="participant-avatar">\${p.name[0].toUpperCase()}</div>
+        <div class="participant-info">
+          <div class="participant-name">\${p.name}</div>
+          <div class="participant-status \${p.isTyping ? 'typing' : ''}">
+            \${p.isTyping ? '<div class="typing-indicator"><span></span><span></span><span></span></div>' : 'Active · ' + p.messageCount + ' msgs'}
+          </div>
+        </div>
+      </div>
+    \`).join('');
+  };
+  
+  const renderQueue = () => {
+    let html = '';
+    if (activeUser) {
+      html += \`<div class="queue-item active"><span class="badge"></span><b>\${activeUser}</b> (active)</div>\`;
+    }
+    queue.forEach((q, i) => {
+      html += \`<div class="queue-item"><span class="badge"></span>\${i+1}. \${q.user}</div>\`;
+    });
+    queueEl.innerHTML = html;
+  };
+  
+  const addChatMessage = (msg) => {
+    const el = document.createElement('div');
+    el.className = 'chat-msg';
+    el.innerHTML = \`<div class="sender">\${msg.user}</div><div class="text">\${msg.text}</div>\`;
+    chatMessages.appendChild(el);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  };
+  
+  const addCommandMessage = (msg) => {
+    const el = document.createElement('div');
+    el.className = 'command-msg';
+    el.innerHTML = \`<div class="sender">\${msg.user}</div>\`;
+    el.appendChild(document.createTextNode(msg.text));
+    commandMessages.appendChild(el);
+    commandMessages.scrollTop = commandMessages.scrollHeight;
+  };
+  
+  const es = new EventSource('events?token=' + encodeURIComponent(TOKEN) + '&name=' + encodeURIComponent(myName));
+  es.onmessage = (ev) => {
+    try {
+      const msg = JSON.parse(ev.data);
+      if (msg.kind === 'participant_join' && msg.data) {
+        participants = msg.data.participants || [];
+        renderParticipants();
+      }
+      if (msg.kind === 'participant_leave' && msg.data) {
+        participants = msg.data.participants || [];
+        renderParticipants();
+      }
+      if (msg.kind === 'queue_update' && msg.data) {
+        queue = msg.data.queue || [];
+        activeUser = msg.data.active?.user || null;
+        renderQueue();
+      }
+      if (msg.kind === 'chat') {
+        addChatMessage(msg);
+      }
+      if (msg.kind === 'typing' && msg.data) {
+        const p = participants.find(pt => pt.name === msg.data.user);
+        if (p) {
+          p.isTyping = true;
+          renderParticipants();
+          setTimeout(() => { p.isTyping = false; renderParticipants(); }, 2000);
+        }
+      }
+      if (msg.kind === 'task' || msg.kind === 'msg') {
+        addCommandMessage(msg);
+      }
+    } catch (e) { console.error(e); }
+  };
+  
+  const sendChat = async () => {
+    const text = chatInput.value.trim();
+    if (!text) return;
+    chatInput.value = '';
+    await fetch('send?token=' + encodeURIComponent(TOKEN), {
+      method:'POST',
+      headers:{'content-type':'application/json'},
+      body: JSON.stringify({ user: myName, text, kind: 'chat' })
+    });
+  };
+  
+  chatInput.addEventListener('input', () => {
+    fetch('send?token=' + encodeURIComponent(TOKEN), {
+      method:'POST',
+      headers:{'content-type':'application/json'},
+      body: JSON.stringify({ user: myName, text: '', kind: 'typing' })
+    });
+  });
+  
+  document.getElementById('sendChat').onclick = sendChat;
+  chatInput.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); } });
+  
+  callBtn.onclick = () => {
+    if (inCall) {
+      inCall = false;
+      callBtn.textContent = 'Start Call';
+      callBtn.className = 'call-btn start';
+      callStatus.textContent = 'Not in call';
+      callStatus.classList.remove('active');
+    } else {
+      inCall = true;
+      callBtn.textContent = 'End Call';
+      callBtn.className = 'call-btn end';
+      callStatus.textContent = 'In call';
+      callStatus.classList.add('active');
+    }
+  };
 })();
 </script>
 </body>
@@ -807,6 +1145,18 @@ export async function startShareServer(opts: {
       return
     }
 
+    if (rel === 'dashboard') {
+      // Check 20-minute expiry
+      if (Date.now() - sessionCreatedAt > SESSION_EXPIRY_MS) {
+        res.writeHead(410, { 'content-type': 'text/html; charset=utf-8' })
+        res.end(renderLateJoinPage())
+        return
+      }
+      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' })
+      res.end(renderDashboard(sessionId, token, sessionCreatedAt))
+      return
+    }
+
     if (rel === 'exit') {
       let body = ''
       req.on('data', c => { body += c; if (body.length > 1000) req.destroy() })
@@ -899,15 +1249,21 @@ export async function startShareServer(opts: {
         try {
           const data = JSON.parse(body || '{}') as { user?: string; text?: string; kind?: string }
           const text = (data.text ?? '').toString().slice(0, 8000).trim()
-          if (!text) { res.writeHead(400); res.end('empty'); return }
           const user = (data.user ?? 'guest').toString().slice(0, 40).trim() || 'guest'
-          const kind = (data.kind === 'task' ? 'task' : 'msg') as ShareMessage['kind']
+          const kind = (data.kind === 'task' ? 'task' : data.kind === 'chat' ? 'chat' : data.kind === 'typing' ? 'typing' : 'msg') as ShareMessage['kind']
           
           // Add participant if not exists
           addParticipant(user)
           updateParticipantActivity(user)
           
-          // Non-host messages go through queue, host messages go directly
+          // Chat and typing messages bypass queue, Cortex commands go through queue
+          if (kind === 'chat' || kind === 'typing') {
+            broadcast({ id: randomUUID(), user, text, ts: Date.now(), kind, data: { user } })
+            res.writeHead(200); res.end('ok')
+            return
+          }
+          
+          // Non-host Cortex messages go through queue, host messages go directly
           const isHost = user === opts.driverName || user === 'driver'
           if (isHost) {
             broadcast({ id: randomUUID(), user, text, ts: Date.now(), kind })

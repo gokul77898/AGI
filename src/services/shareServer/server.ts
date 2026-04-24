@@ -461,6 +461,7 @@ const renderUI = (sessionId: string, token: string, createdAt: number, userName:
   const sendBtn = document.getElementById('sendBtn');
   const taskBtn = document.getElementById('taskBtn');
   const exitBtn = document.getElementById('exitBtn');
+  console.log('Exit button found:', exitBtn);
   let currentQueue: any[] = [];
   let activeUser: string | null = null;
   let myTurn = true;
@@ -477,7 +478,7 @@ const renderUI = (sessionId: string, token: string, createdAt: number, userName:
     log.scrollTop = log.scrollHeight;
   };
 
-  const es = new EventSource('events?token=' + encodeURIComponent(TOKEN));
+  const es = new EventSource('events?token=' + encodeURIComponent(TOKEN) + '&name=' + encodeURIComponent(USER_NAME));
   es.onmessage = (ev) => {
     if (checkExpiry()) return;
     try { 
@@ -573,6 +574,7 @@ const renderUI = (sessionId: string, token: string, createdAt: number, userName:
   };
 
   const exit = async () => {
+    console.log('Exit button clicked');
     if (checkExpiry()) return;
     if (!confirm('Are you sure you want to exit this session?')) return;
     try {
@@ -798,6 +800,8 @@ export async function startShareServer(opts: {
         return
       }
       const name = url.searchParams.get('name') || 'guest'
+      // Track participant when they load the session page
+      addParticipant(name)
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' })
       res.end(renderUI(sessionId, token, sessionCreatedAt, name))
       return
@@ -860,6 +864,9 @@ export async function startShareServer(opts: {
 
     if (rel === 'events') {
       if (auth !== token) { res.writeHead(401); res.end('bad token'); return }
+      const clientName = url.searchParams.get('name') || 'guest'
+      // Track participant when they connect via SSE
+      addParticipant(clientName)
       res.writeHead(200, {
         'content-type': 'text/event-stream',
         'cache-control': 'no-cache, no-transform',
@@ -870,7 +877,7 @@ export async function startShareServer(opts: {
       for (const m of transcript.slice(-50)) {
         res.write(`data: ${JSON.stringify(m)}\n\n`)
       }
-      const client: Client = { id: randomUUID(), res, joinedAt: Date.now() }
+      const client: Client = { id: randomUUID(), res, name: clientName, joinedAt: Date.now() }
       clients.add(client)
       const keepalive = setInterval(() => {
         try { res.write(': ping\n\n') } catch { /* ignore */ }
@@ -878,6 +885,8 @@ export async function startShareServer(opts: {
       req.on('close', () => {
         clearInterval(keepalive)
         clients.delete(client)
+        // Remove participant when they disconnect
+        if (client.name) removeParticipant(client.name)
       })
       return
     }

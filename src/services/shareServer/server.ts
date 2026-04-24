@@ -10,7 +10,8 @@ export type ShareMessage = {
   user: string
   text: string
   ts: number
-  kind: 'msg' | 'system' | 'task' | 'result' | 'session_ended'
+  kind: 'msg' | 'system' | 'task' | 'result' | 'session_ended' | 'participant_join' | 'participant_leave' | 'queue_update' | 'activity'
+  data?: any
 }
 
 export type TunnelProvider = 'cloudflared' | 'localhost.run' | 'serveo' | 'none'
@@ -132,7 +133,97 @@ const renderSessionEndedPage = (): string => `<!doctype html>
   </div>
 </body></html>`
 
-const renderUI = (sessionId: string, token: string, createdAt: number): string => `<!doctype html>
+const renderNameEntryPage = (sessionId: string, token: string): string => `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Cortex · Join Session</title>
+<style>
+  :root { color-scheme: dark; --accent:#7ee787; --accent2:#58a6ff; }
+  * { box-sizing: border-box; }
+  html, body { margin:0; height:100%; overflow:hidden; font-family:ui-monospace,Menlo,Consolas,monospace; color:#e6edf3; }
+  body { background: radial-gradient(ellipse at 20% 10%, #0f1a1f 0%, #050607 60%, #000 100%); display:grid;place-items:center; }
+  #bg { position:fixed; inset:0; z-index:0; opacity:0.55; pointer-events:none; }
+  .card { position:relative; z-index:1; max-width:420px; padding:40px; background:rgba(17,21,26,0.9); border:1px solid rgba(255,255,255,0.1); border-radius:16px; backdrop-filter:blur(20px); box-shadow:0 0 60px rgba(126,231,135,0.15); text-align:center; }
+  h1 { margin:0 0 8px; font-size:24px; color:var(--accent); }
+  .sub { color:#8b949e; font-size:13px; line-height:1.6; margin-bottom:28px; }
+  input { width:100%; background:rgba(11,13,16,0.9); color:#e6edf3; border:1px solid rgba(255,255,255,0.15); border-radius:10px; padding:14px 16px; font-size:14px; margin-bottom:16px; outline:none; transition:all 0.2s; }
+  input:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(126,231,135,0.2); }
+  button { width:100%; border:0; border-radius:10px; padding:14px; cursor:pointer; font-weight:600; font-size:14px; letter-spacing:0.04em; transition:all 0.15s; background:linear-gradient(135deg,var(--accent),#2ea043); color:#fff; box-shadow:0 4px 14px rgba(126,231,135,0.3); }
+  button:hover { box-shadow:0 6px 20px rgba(126,231,135,0.45); transform:translateY(-1px); }
+  button:active { transform:translateY(0); }
+  .error { color:#f85149; font-size:12px; margin-top:12px; display:none; }
+  @media (max-width: 768px) { .card { margin:20px; padding:30px; } }
+</style>
+</head>
+<body>
+  <canvas id="bg"></canvas>
+  <div class="card">
+    <h1>👋 Join Cortex</h1>
+    <div class="sub">Enter your name to join this shared session</div>
+    <input id="nameInput" placeholder="Your name" maxlength="30" autofocus/>
+    <button id="joinBtn">Join Session</button>
+    <div class="error" id="error"></div>
+  </div>
+<script>
+(() => {
+  const TOKEN = ${JSON.stringify(token)};
+  const sessionId = ${JSON.stringify(sessionId)};
+  const nameInput = document.getElementById('nameInput');
+  const joinBtn = document.getElementById('joinBtn');
+  const error = document.getElementById('error');
+  
+  const join = async () => {
+    const name = nameInput.value.trim();
+    if (!name) { error.textContent = 'Please enter your name'; error.style.display = 'block'; return; }
+    joinBtn.disabled = true;
+    joinBtn.textContent = 'Joining…';
+    try {
+      const r = await fetch('join', {
+        method:'POST',
+        headers:{'content-type':'application/json'},
+        body: JSON.stringify({ name })
+      });
+      if (r.ok) {
+        window.location.href = 'session?name=' + encodeURIComponent(name) + '&token=' + encodeURIComponent(TOKEN);
+      } else {
+        error.textContent = 'Failed to join. Please try again.';
+        error.style.display = 'block';
+        joinBtn.disabled = false;
+        joinBtn.textContent = 'Join Session';
+      }
+    } catch (e) {
+      error.textContent = 'Connection error. Please try again.';
+      error.style.display = 'block';
+      joinBtn.disabled = false;
+      joinBtn.textContent = 'Join Session';
+    }
+  };
+  
+  joinBtn.onclick = join;
+  nameInput.onkeydown = (e) => { if (e.key === 'Enter') join(); };
+  
+  // Simple particle background
+  const cv = document.getElementById('bg');
+  const ctx = cv.getContext('2d');
+  let W = 0, H = 0;
+  const resize = () => { W = window.innerWidth; H = window.innerHeight; cv.width = W; cv.height = H; };
+  resize(); window.addEventListener('resize', resize);
+  const pts = Array.from({length:60}, () => ({ x:Math.random()*W, y:Math.random()*H, vx:(Math.random()-0.5)*0.5, vy:(Math.random()-0.5)*0.5 }));
+  const draw = () => {
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle = 'rgba(126,231,135,0.3)';
+    pts.forEach(p => { p.x += p.vx; p.y += p.vy; if(p.x<0||p.x>W)p.vx*=-1; if(p.y<0||p.y>H)p.vy*=-1; ctx.beginPath(); ctx.arc(p.x,p.y,2,0,Math.PI*2); ctx.fill(); });
+    requestAnimationFrame(draw);
+  };
+  draw();
+})();
+</script>
+</body>
+</html>`
+
+const renderUI = (sessionId: string, token: string, createdAt: number, userName: string): string => `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
@@ -183,10 +274,17 @@ const renderUI = (sessionId: string, token: string, createdAt: number): string =
   #text:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(126,231,135,0.16); }
   button { border:0; border-radius:8px; padding:10px 18px; cursor:pointer; font-weight:600; font-size:12px; letter-spacing:0.04em; transition:all 0.15s; }
   button:active { transform:scale(0.97); }
+  button:disabled { opacity:0.5; cursor:not-allowed; }
   #sendBtn { background:linear-gradient(135deg,#2ea043,#238636); color:#fff; box-shadow:0 4px 12px rgba(46,160,67,0.25); }
   #sendBtn:hover { box-shadow:0 6px 18px rgba(46,160,67,0.4); }
+  #sendBtn:disabled { background:#30363d; box-shadow:none; }
   #taskBtn { background:linear-gradient(135deg,#a371f7,#8957e5); color:#fff; box-shadow:0 4px 12px rgba(163,113,247,0.25); }
   #taskBtn:hover { box-shadow:0 6px 18px rgba(163,113,247,0.4); }
+  #taskBtn:disabled { background:#30363d; box-shadow:none; }
+  .exit-btn { background:linear-gradient(135deg,#f85149,#da3633); color:#fff; box-shadow:0 4px 12px rgba(248,81,73,0.25); padding:6px 12px; font-size:11px; }
+  .exit-btn:hover { box-shadow:0 6px 18px rgba(248,81,73,0.4); }
+  .queue { padding:8px 22px; background:rgba(210,153,34,0.1); border-bottom:1px solid rgba(210,153,34,0.2); font-size:11px; color:#d29922; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .queue .queue-item { background:rgba(210,153,34,0.15); padding:4px 8px; border-radius:4px; }
 
   /* Mobile-specific styles */
   @media (max-width: 768px) {
@@ -210,13 +308,14 @@ const renderUI = (sessionId: string, token: string, createdAt: number): string =
       <div class="brand"><span class="dot"></span>CORTEX <span class="g">Shared Session</span></div>
       <div class="sid">session · ${sessionId.slice(0, 8)}</div>
       <div class="who">
-        <span>you: <b id="whoami">…</b></span>
+        <span>you: <b id="whoami">${userName}</b></span>
+        <button id="exitBtn" class="exit-btn">Exit</button>
         <a class="dlqr" href="qr.svg?download=1" download="cortex-share-qr.svg">⬇ QR svg</a>
         <a class="dlqr" href="qr.png?download=1" download="cortex-share-qr.png">⬇ QR png</a>
       </div>
     </header>
+    <div id="queue" class="queue" style="display:none;"></div>
     <footer>
-      <input id="name" placeholder="your name" />
       <textarea id="text" placeholder="type a message… (Enter chat · Shift+Enter newline · Cmd/Ctrl+Enter task)"></textarea>
       <button id="sendBtn">Chat</button>
       <button id="taskBtn">▸ Task</button>
@@ -354,17 +453,17 @@ const renderUI = (sessionId: string, token: string, createdAt: number): string =
 
   // --- chat wire --------------------------------------------------------
   const TOKEN = ${JSON.stringify(token)};
+  const USER_NAME = ${JSON.stringify(userName)};
   const log = document.getElementById('log');
-  const nameEl = document.getElementById('name');
   const textEl = document.getElementById('text');
   const whoami = document.getElementById('whoami');
-  const storedName = localStorage.getItem('cortex-share-name') || ('guest-' + Math.random().toString(36).slice(2,6));
-  nameEl.value = storedName;
-  whoami.textContent = storedName;
-  nameEl.addEventListener('change', () => {
-    localStorage.setItem('cortex-share-name', nameEl.value || 'guest');
-    whoami.textContent = nameEl.value || 'guest';
-  });
+  const queueEl = document.getElementById('queue');
+  const sendBtn = document.getElementById('sendBtn');
+  const taskBtn = document.getElementById('taskBtn');
+  const exitBtn = document.getElementById('exitBtn');
+  let currentQueue: any[] = [];
+  let activeUser: string | null = null;
+  let myTurn = true;
 
   const render = (m) => {
     const el = document.createElement('div');
@@ -410,6 +509,20 @@ const renderUI = (sessionId: string, token: string, createdAt: number): string =
         es.close();
         return;
       }
+      if (msg.kind === 'queue_update' && msg.data) {
+        currentQueue = msg.data.queue || [];
+        activeUser = msg.data.active?.user || null;
+        updateQueueUI();
+        return;
+      }
+      if (msg.kind === 'participant_join') {
+        render({ user:'system', kind:'system', text:msg.text, ts:msg.ts });
+        return;
+      }
+      if (msg.kind === 'participant_leave') {
+        render({ user:'system', kind:'system', text:msg.text, ts:msg.ts });
+        return;
+      }
       render(msg);
     } catch {}
   };
@@ -419,22 +532,104 @@ const renderUI = (sessionId: string, token: string, createdAt: number): string =
     render({ user:'system', kind:'system', text:'connection lost — retrying…', ts:Date.now() });
   };
 
+  const updateQueueUI = () => {
+    if (currentQueue.length > 0 || activeUser) {
+      let html = '';
+      if (activeUser) {
+        html += '<span>🔸 Active: <b>' + activeUser + '</b></span>';
+      }
+      if (currentQueue.length > 0) {
+        html += '<span>Queue:</span>';
+        currentQueue.forEach((q, i) => {
+          html += '<span class="queue-item">' + (i+1) + '. ' + q.user + '</span>';
+        });
+      }
+      queueEl.innerHTML = html;
+      queueEl.style.display = 'flex';
+    } else {
+      queueEl.style.display = 'none';
+    }
+    myTurn = !activeUser || activeUser === USER_NAME;
+    sendBtn.disabled = !myTurn;
+    taskBtn.disabled = !myTurn;
+    textEl.placeholder = myTurn ? 'type a message… (Enter chat · Shift+Enter newline · Cmd/Ctrl+Enter task)' : 'Wait for your turn…';
+  };
+
   const send = async (kind) => {
     if (checkExpiry()) return;
+    if (!myTurn) {
+      render({ user:'system', kind:'system', text:'Please wait for your turn in the queue.', ts:Date.now() });
+      return;
+    }
     const text = textEl.value.trim();
     if (!text) return;
-    const user = nameEl.value.trim() || 'guest';
     textEl.value = '';
     const r = await fetch('send?token=' + encodeURIComponent(TOKEN), {
       method:'POST',
       headers:{'content-type':'application/json'},
-      body: JSON.stringify({ user, text, kind })
+      body: JSON.stringify({ user: USER_NAME, text, kind })
     });
     if (!r.ok) render({ user:'system', kind:'system', text:'send failed — session may have ended', ts:Date.now() });
   };
 
-  document.getElementById('sendBtn').onclick = () => send('msg');
-  document.getElementById('taskBtn').onclick = () => send('task');
+  const exit = async () => {
+    if (checkExpiry()) return;
+    if (!confirm('Are you sure you want to exit this session?')) return;
+    try {
+      const r = await fetch('exit', {
+        method:'POST',
+        headers:{'content-type':'application/json'},
+        body: JSON.stringify({ name: USER_NAME })
+      });
+      if (r.ok) {
+        const data = await r.json();
+        document.body.innerHTML = \`<!doctype html><html><head><meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Cortex · Session Left</title>
+<style>
+  html,body{margin:0;height:100%;background:radial-gradient(ellipse at top,#0f1a1f,#000);color:#e6edf3;font-family:ui-monospace,Menlo,Consolas,monospace;display:grid;place-items:center;text-align:center;padding:24px}
+  .card{max-width:520px;padding:40px;background:rgba(17,21,26,0.85);border:1px solid rgba(255,255,255,0.1);border-radius:16px;backdrop-filter:blur(16px)}
+  h1{margin:0 0 12px;font-size:22px;color:#58a6ff}
+  .sub{color:#8b949e;font-size:14px;line-height:1.7;margin-bottom:24px}
+  .stat{color:#7ee787;font-size:32px;margin-bottom:8px}
+  .stat-label{color:#8b949e;font-size:12px;margin-bottom:24px}
+  input{width:100%;background:rgba(11,13,16,0.9);color:#e6edf3;border:1px solid rgba(255,255,255,0.15);border-radius:10px;padding:14px 16px;font-size:14px;margin-bottom:16px;outline:none;}
+  input:focus{border-color:#7ee787;box-shadow:0 0 0 3px rgba(126,231,135,0.2);}
+  button{width:100%;border:0;border-radius:10px;padding:14px;cursor:pointer;font-weight:600;font-size:14px;letter-spacing:0.04em;background:linear-gradient(135deg,#7ee787,#2ea043);color:#fff;box-shadow:0 4px 14px rgba(126,231,135,0.3);}
+  button:hover{box-shadow:0 6px 20px rgba(126,231,135,0.45);}
+</style></head>
+<body>
+  <div class="card">
+    <h1>👋 You left the session</h1>
+    <div class="stat">\${data.contribution.messageCount}</div>
+    <div class="stat-label">messages contributed</div>
+    <div class="sub">Thank you for your contribution to this Cortex session!</div>
+    <input id="rejoinName" placeholder="Enter your name to rejoin" value="\${USER_NAME}" maxlength="30"/>
+    <button id="rejoinBtn">Rejoin Session</button>
+  </div>
+<script>
+(() => {
+  const sessionId = ${JSON.stringify(sessionId)};
+  const token = ${JSON.stringify(token)};
+  const rejoinName = document.getElementById('rejoinName');
+  const rejoinBtn = document.getElementById('rejoinBtn');
+  rejoinBtn.onclick = () => {
+    const name = rejoinName.value.trim();
+    if (name) window.location.href = 'session?name=' + encodeURIComponent(name) + '&token=' + encodeURIComponent(token);
+  };
+})();
+</script>
+</body></html>\`;
+        es.close();
+      }
+    } catch (e) {
+      render({ user:'system', kind:'system', text:'Failed to exit session.', ts:Date.now() });
+    }
+  };
+
+  sendBtn.onclick = () => send('msg');
+  taskBtn.onclick = () => send('task');
+  exitBtn.onclick = exit;
   textEl.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); send('task'); return; }
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send('msg'); }
@@ -444,7 +639,9 @@ const renderUI = (sessionId: string, token: string, createdAt: number): string =
 </body>
 </html>`
 
-type Client = { id: string; res: http.ServerResponse }
+type Client = { id: string; res: http.ServerResponse; name?: string; joinedAt: number }
+type Participant = { name: string; joinedAt: number; messageCount: number; lastActivity: number }
+type QueuedMessage = { id: string; user: string; text: string; kind: ShareMessage['kind']; queuedAt: number }
 
 export async function startShareServer(opts: {
   port?: number
@@ -461,6 +658,10 @@ export async function startShareServer(opts: {
   const transcript: ShareMessage[] = []
   const clients = new Set<Client>()
   const listeners = new Set<(m: ShareMessage) => void>()
+  const participants: Map<string, Participant> = new Map() // name -> Participant
+  const participantOrder: string[] = [] // names in join order
+  const messageQueue: QueuedMessage[] = []
+  let activeMessage: ShareMessage | null = null
   let publicUrl: string | null = null
   let tunnelProvider: TunnelProvider = 'none'
   let tunnelProc: ChildProcess | null = null
@@ -481,6 +682,50 @@ export async function startShareServer(opts: {
     }
     for (const l of listeners) {
       try { l(m) } catch { /* ignore */ }
+    }
+  }
+
+  const addParticipant = (name: string) => {
+    if (!participants.has(name)) {
+      const p: Participant = { name, joinedAt: Date.now(), messageCount: 0, lastActivity: Date.now() }
+      participants.set(name, p)
+      participantOrder.push(name)
+      broadcast({ id: randomUUID(), user: 'system', kind: 'participant_join', text: `${name} joined the session`, ts: Date.now(), data: { participant: p, participants: Array.from(participants.values()), order: participantOrder } })
+    }
+  }
+
+  const removeParticipant = (name: string) => {
+    if (participants.has(name)) {
+      const p = participants.get(name)!
+      participants.delete(name)
+      const idx = participantOrder.indexOf(name)
+      if (idx > -1) participantOrder.splice(idx, 1)
+      broadcast({ id: randomUUID(), user: 'system', kind: 'participant_leave', text: `${name} left the session`, ts: Date.now(), data: { participant: p, participants: Array.from(participants.values()), order: participantOrder, contribution: { messageCount: p.messageCount } } })
+    }
+  }
+
+  const updateParticipantActivity = (name: string) => {
+    const p = participants.get(name)
+    if (p) {
+      p.lastActivity = Date.now()
+      broadcast({ id: randomUUID(), user: 'system', kind: 'activity', text: '', ts: Date.now(), data: { participant: p } })
+    }
+  }
+
+  const processQueue = () => {
+    if (activeMessage || messageQueue.length === 0) return
+    const next = messageQueue.shift()!
+    activeMessage = { id: next.id, user: next.user, text: next.text, ts: Date.now(), kind: next.kind }
+    broadcast(activeMessage)
+    broadcast({ id: randomUUID(), user: 'system', kind: 'queue_update', text: '', ts: Date.now(), data: { queue: messageQueue, active: activeMessage } })
+  }
+
+  const completeActiveMessage = () => {
+    if (activeMessage) {
+      const p = participants.get(activeMessage.user)
+      if (p) p.messageCount++
+      activeMessage = null
+      processQueue()
     }
   }
 
@@ -518,7 +763,65 @@ export async function startShareServer(opts: {
         return
       }
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' })
-      res.end(renderUI(sessionId, token, sessionCreatedAt))
+      res.end(renderNameEntryPage(sessionId, token))
+      return
+    }
+
+    if (rel === 'join') {
+      // Check 20-minute expiry
+      if (Date.now() - sessionCreatedAt > SESSION_EXPIRY_MS) {
+        res.writeHead(410, { 'content-type': 'text/html; charset=utf-8' })
+        res.end(renderLateJoinPage())
+        return
+      }
+      let body = ''
+      req.on('data', c => { body += c; if (body.length > 1000) req.destroy() })
+      req.on('end', () => {
+        try {
+          const data = JSON.parse(body || '{}') as { name?: string }
+          const name = (data.name ?? '').toString().slice(0, 30).trim() || 'guest'
+          addParticipant(name)
+          res.writeHead(200, { 'content-type': 'application/json' })
+          res.end(JSON.stringify({ success: true, name, participants: Array.from(participants.values()), order: participantOrder }))
+        } catch {
+          res.writeHead(400); res.end('bad')
+        }
+      })
+      return
+    }
+
+    if (rel === 'session') {
+      // Check 20-minute expiry
+      if (Date.now() - sessionCreatedAt > SESSION_EXPIRY_MS) {
+        res.writeHead(410, { 'content-type': 'text/html; charset=utf-8' })
+        res.end(renderLateJoinPage())
+        return
+      }
+      const name = url.searchParams.get('name') || 'guest'
+      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' })
+      res.end(renderUI(sessionId, token, sessionCreatedAt, name))
+      return
+    }
+
+    if (rel === 'exit') {
+      let body = ''
+      req.on('data', c => { body += c; if (body.length > 1000) req.destroy() })
+      req.on('end', () => {
+        try {
+          const data = JSON.parse(body || '{}') as { name?: string }
+          const name = (data.name ?? '').toString().trim()
+          if (name) {
+            const p = participants.get(name)
+            removeParticipant(name)
+            res.writeHead(200, { 'content-type': 'application/json' })
+            res.end(JSON.stringify({ success: true, contribution: p ? { messageCount: p.messageCount } : { messageCount: 0 } }))
+          } else {
+            res.writeHead(400); res.end('bad')
+          }
+        } catch {
+          res.writeHead(400); res.end('bad')
+        }
+      })
       return
     }
 
@@ -567,7 +870,7 @@ export async function startShareServer(opts: {
       for (const m of transcript.slice(-50)) {
         res.write(`data: ${JSON.stringify(m)}\n\n`)
       }
-      const client: Client = { id: randomUUID(), res }
+      const client: Client = { id: randomUUID(), res, joinedAt: Date.now() }
       clients.add(client)
       const keepalive = setInterval(() => {
         try { res.write(': ping\n\n') } catch { /* ignore */ }
@@ -590,12 +893,36 @@ export async function startShareServer(opts: {
           if (!text) { res.writeHead(400); res.end('empty'); return }
           const user = (data.user ?? 'guest').toString().slice(0, 40).trim() || 'guest'
           const kind = (data.kind === 'task' ? 'task' : 'msg') as ShareMessage['kind']
-          broadcast({ id: randomUUID(), user, text, ts: Date.now(), kind })
+          
+          // Add participant if not exists
+          addParticipant(user)
+          updateParticipantActivity(user)
+          
+          // Non-host messages go through queue, host messages go directly
+          const isHost = user === opts.driverName || user === 'driver'
+          if (isHost) {
+            broadcast({ id: randomUUID(), user, text, ts: Date.now(), kind })
+            completeActiveMessage()
+          } else {
+            // Queue the message
+            const queued: QueuedMessage = { id: randomUUID(), user, text, kind, queuedAt: Date.now() }
+            messageQueue.push(queued)
+            broadcast({ id: randomUUID(), user: 'system', kind: 'queue_update', text: '', ts: Date.now(), data: { queue: messageQueue, active: activeMessage } })
+            processQueue()
+          }
+          
           res.writeHead(200); res.end('ok')
         } catch {
           res.writeHead(400); res.end('bad')
         }
       })
+      return
+    }
+
+    if (rel === 'complete' && req.method === 'POST') {
+      if (auth !== token) { res.writeHead(401); res.end('bad token'); return }
+      completeActiveMessage()
+      res.writeHead(200); res.end('ok')
       return
     }
 

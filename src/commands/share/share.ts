@@ -82,7 +82,60 @@ const buildBanner = async (
 }
 
 const attachDriverRelay = (handle: ShareServerHandle): void => {
+  let participants: any[] = []
+  let queue: any[] = []
+  let activeUser: string | null = null
+
+  const renderParticipantList = () => {
+    if (participants.length === 0) return
+    process.stderr.write(`\n${DIM}─ Participants ─${RESET}\n`)
+    participants.forEach((p, i) => {
+      const lastActive = p.lastActivity ? new Date(p.lastActivity).toLocaleTimeString() : 'never'
+      process.stderr.write(`${DIM}  ${i + 1}.${RESET} ${BOLD}${p.name}${RESET} ${DIM}(${p.messageCount} msgs, last: ${lastActive})${RESET}\n`)
+    })
+  }
+
+  const renderQueue = () => {
+    if (queue.length === 0 && !activeUser) return
+    process.stderr.write(`\n${DIM}─ Message Queue ─${RESET}\n`)
+    if (activeUser) {
+      process.stderr.write(`${DIM}  🔸 Active:${RESET} ${BOLD}${activeUser}${RESET}\n`)
+    }
+    if (queue.length > 0) {
+      process.stderr.write(`${DIM}  📋 Queued:${RESET}\n`)
+      queue.forEach((q, i) => {
+        process.stderr.write(`${DIM}    ${i + 1}.${RESET} ${q.user} ${DIM}(${q.kind})${RESET}\n`)
+      })
+    }
+  }
+
   handle.onMessage((m: ShareMessage) => {
+    if (m.kind === 'participant_join' && m.data) {
+      participants = m.data.participants || []
+      process.stderr.write(`\n${GREEN}✓${RESET} ${BOLD}${m.data.participant.name}${RESET} joined the session\n`)
+      renderParticipantList()
+      return
+    }
+    if (m.kind === 'participant_leave' && m.data) {
+      participants = m.data.participants || []
+      const contribution = m.data.contribution || { messageCount: 0 }
+      process.stderr.write(`\n${YELLOW}←${RESET} ${BOLD}${m.data.participant.name}${RESET} left the session ${DIM}(${contribution.messageCount} messages contributed)${RESET}\n`)
+      renderParticipantList()
+      return
+    }
+    if (m.kind === 'queue_update' && m.data) {
+      queue = m.data.queue || []
+      activeUser = m.data.active?.user || null
+      renderQueue()
+      return
+    }
+    if (m.kind === 'activity' && m.data) {
+      const p = m.data.participant
+      const idx = participants.findIndex((pt: any) => pt.name === p.name)
+      if (idx > -1) participants[idx] = p
+      // Don't spam terminal with every activity update
+      return
+    }
     if (m.user === 'system') return
     const tag =
       m.kind === 'task'

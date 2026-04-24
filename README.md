@@ -449,7 +449,7 @@ which provider is serving the request:
 The active model also appears in the spinner next to the verb:
 `Twisting… · Kimi-K2.6`.
 
-### � Shared Sessions — `/share` (multiplayer Cortex)
+### 🤝 Shared Sessions — `/share` (multiplayer Cortex)
 
 Up to 4 teammates can join one Cortex session over your local network. Tasks
 run sequentially (one at a time) but everyone sees every message in real time
@@ -461,14 +461,35 @@ run sequentially (one at a time) but everyone sees every message in real time
 /share stop            # end the shared session
 ```
 
+**Two web interfaces:**
+
+- **Host Control UI** (`/host`) — Host-only dashboard with:
+  - Heavy 3D animations (200 particles, 12 pulsing nodes with glow)
+  - Participant list with kick buttons
+  - Detailed activity log (color-coded: join/leave/chat/typing/command)
+  - Voice call controls (start/end, UI placeholder for WebRTC)
+  - Dual chat system (team chat + Cortex commands panel)
+  - Message queue visualization
+  - Real-time typing indicators
+
+- **Participant Dashboard** (`/dashboard`) — Shared view for all:
+  - 3D node visualization
+  - Participant list with typing indicators
+  - Dual chat system (team chat + Cortex commands)
+  - Voice call UI
+  - Message queue panel
+  - Activity tracking
+
 What you get:
 
 - a **Local** URL (`http://127.0.0.1:<port>`) for you
 - a **Network** URL (`http://<lan-ip>:<port>`) + QR code to share with teammates
   on the same Wi-Fi / LAN
-- a lightweight web UI where teammates type messages or queue **tasks**
-- every teammate prompt tagged `[task]` shows up in your terminal so you, the
-  driver, can pick it up and run it in the real Cortex session
+- **Host UI** at `/host` for the session driver
+- **Dashboard** at `/dashboard` for all participants
+- dual chat: normal team messages (bypass queue) + Cortex commands (queued)
+- real-time typing indicators across all participants
+- detailed activity logging showing everything clients do
 
 Use it when:
 

@@ -71,6 +71,7 @@ const buildBanner = async (
     `  ${BOLD}Share this:${RESET}  ${MAGENTA}${primary}${RESET}`,
     `  ${DIM}Local:${RESET}       ${CYAN}${handle.url}${RESET}`,
     `  ${DIM}LAN:${RESET}         ${CYAN}${handle.lanUrl}${RESET}`,
+    `  ${DIM}Host UI:${RESET}     ${CYAN}${handle.url}host${RESET}`,
     `  ${DIM}Dashboard:${RESET}   ${CYAN}${handle.url}dashboard${RESET}`,
     '',
     qr,

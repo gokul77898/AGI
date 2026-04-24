@@ -561,6 +561,478 @@ const renderDashboard = (sessionId: string, token: string, createdAt: number): s
 </body>
 </html>`
 
+const renderHostUI = (sessionId: string, token: string, createdAt: number, hostName: string): string => `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Cortex · Host Control</title>
+<style>
+  :root { color-scheme: dark; --accent:#7ee787; --accent2:#58a6ff; --task:#bc8cff; --warn:#d29922; --danger:#f85149; }
+  * { box-sizing: border-box; }
+  html, body { margin:0; height:100%; overflow:hidden; font-family:ui-monospace,Menlo,Consolas,monospace; color:#e6edf3; }
+  body { background: radial-gradient(ellipse at 20% 10%, #0f1a1f 0%, #050607 60%, #000 100%); }
+  #bg { position:fixed; inset:0; z-index:0; opacity:0.55; pointer-events:none; }
+  .host-dashboard { position:relative; z-index:1; height:100vh; display:grid; grid-template-columns:300px 1fr 350px; grid-template-rows:auto 1fr auto; gap:0; }
+  
+  header { grid-column:1/-1; padding:14px 20px; backdrop-filter:blur(14px); background:rgba(8,10,14,0.55); border-bottom:1px solid rgba(255,255,255,0.06); display:flex; gap:14px; align-items:center; }
+  header .brand { display:flex; gap:10px; align-items:center; font-weight:700; font-size:14px; letter-spacing:0.04em; }
+  header .dot { width:10px; height:10px; border-radius:50%; background:var(--accent); box-shadow:0 0 14px var(--accent); animation:pulse 2s ease-in-out infinite; }
+  @keyframes pulse { 50% { transform:scale(1.3); opacity:0.6; } }
+  header .brand span.g { background:linear-gradient(90deg,var(--accent),var(--accent2),var(--task)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  header .badge { background:var(--accent); color:#000; padding:4px 10px; border-radius:4px; font-size:11px; font-weight:700; margin-left:10px; }
+  header .sid { font-size:11px; color:#6e7681; letter-spacing:0.06em; margin-left:auto; }
+  
+  .sidebar { padding:16px; background:rgba(8,10,14,0.4); border-right:1px solid rgba(255,255,255,0.06); overflow-y:auto; }
+  .sidebar h3 { margin:0 0 12px; font-size:12px; color:var(--accent); letter-spacing:0.06em; text-transform:uppercase; }
+  .participant-card { background:rgba(17,21,26,0.6); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:12px; margin-bottom:10px; }
+  .participant-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+  .participant-avatar { width:40px; height:40px; border-radius:50%; background:linear-gradient(135deg,var(--accent),var(--accent2)); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px; }
+  .participant-info { flex:1; margin-left:10px; }
+  .participant-name { font-weight:600; font-size:13px; margin-bottom:2px; }
+  .participant-status { font-size:10px; color:#8b949e; }
+  .participant-status.typing { color:var(--accent); }
+  .kick-btn { background:var(--danger); color:#fff; border:0; border-radius:4px; padding:4px 8px; font-size:10px; cursor:pointer; }
+  .typing-indicator { display:inline-flex; gap:2px; align-items:center; }
+  .typing-indicator span { width:4px; height:4px; border-radius:50%; background:var(--accent); animation:typing 1.4s ease-in-out infinite; }
+  .typing-indicator span:nth-child(2) { animation-delay:0.2s; }
+  .typing-indicator span:nth-child(3) { animation-delay:0.4s; }
+  @keyframes typing { 0%,60%,100% { transform:translateY(0); } 30% { transform:translateY(-4px); } }
+  
+  .main { display:grid; grid-template-rows:1fr auto; gap:0; overflow:hidden; }
+  .visualization { padding:20px; overflow-y:auto; position:relative; }
+  .queue-panel { background:rgba(8,10,14,0.55); border-top:1px solid rgba(255,255,255,0.06); padding:12px 20px; }
+  .queue-panel h3 { margin:0 0 10px; font-size:11px; color:var(--warn); letter-spacing:0.06em; text-transform:uppercase; }
+  .queue-items { display:flex; gap:8px; flex-wrap:wrap; }
+  .queue-item { background:rgba(210,153,34,0.15); border:1px solid rgba(210,153,34,0.3); padding:6px 12px; border-radius:6px; font-size:11px; display:flex; gap:6px; align-items:center; }
+  .queue-item.active { background:rgba(126,231,135,0.15); border-color:var(--accent); }
+  .queue-item .badge { width:6px; height:6px; border-radius:50%; background:var(--warn); }
+  .queue-item.active .badge { background:var(--accent); }
+  
+  .right-panel { display:grid; grid-template-rows:auto 1fr 1fr auto; gap:0; background:rgba(8,10,14,0.4); border-left:1px solid rgba(255,255,255,0.06); }
+  .call-panel { padding:16px; background:rgba(17,21,26,0.4); border-bottom:1px solid rgba(255,255,255,0.06); }
+  .call-panel h3 { margin:0 0 12px; font-size:12px; color:var(--accent2); letter-spacing:0.06em; text-transform:uppercase; }
+  .call-controls { display:flex; gap:8px; margin-bottom:10px; }
+  .call-btn { flex:1; padding:10px; border:0; border-radius:8px; cursor:pointer; font-weight:600; font-size:12px; transition:all 0.2s; }
+  .call-btn.start { background:linear-gradient(135deg,var(--accent),#2ea043); color:#fff; }
+  .call-btn.end { background:linear-gradient(135deg,var(--danger),#da3633); color:#fff; }
+  .call-btn:disabled { opacity:0.5; cursor:not-allowed; }
+  .call-status { font-size:11px; color:#8b949e; text-align:center; padding:8px; background:rgba(0,0,0,0.3); border-radius:6px; }
+  .call-status.active { color:var(--accent); }
+  .call-participants { margin-top:10px; font-size:10px; color:#8b949e; }
+  
+  .chat-panel { display:flex; flex-direction:column; overflow:hidden; border-bottom:1px solid rgba(255,255,255,0.06); }
+  .chat-header { padding:12px 16px; background:rgba(8,10,14,0.55); border-bottom:1px solid rgba(255,255,255,0.06); }
+  .chat-header h3 { margin:0; font-size:11px; color:var(--accent2); letter-spacing:0.06em; text-transform:uppercase; }
+  .chat-messages { flex:1; overflow-y:auto; padding:12px; }
+  .chat-messages::-webkit-scrollbar { width:6px; }
+  .chat-messages::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.1); border-radius:3px; }
+  .chat-msg { margin-bottom:8px; padding:8px 10px; background:rgba(17,21,26,0.6); border-radius:6px; font-size:12px; }
+  .chat-msg .sender { font-weight:600; font-size:11px; color:var(--accent2); margin-bottom:2px; }
+  .chat-msg .text { color:#e6edf3; line-height:1.4; }
+  .chat-input-area { padding:12px; background:rgba(8,10,14,0.55); border-top:1px solid rgba(255,255,255,0.06); }
+  .chat-input { width:100%; background:rgba(11,13,16,0.8); color:#e6edf3; border:1px solid rgba(255,255,255,0.12); border-radius:6px; padding:10px 12px; font-size:12px; resize:none; min-height:38px; max-height:80px; outline:none; transition:all 0.2s; }
+  .chat-input:focus { border-color:var(--accent); }
+  .chat-input-area button { margin-top:8px; width:100%; padding:8px; border:0; border-radius:6px; background:linear-gradient(135deg,var(--accent2),#3b82f6); color:#fff; font-weight:600; font-size:11px; cursor:pointer; }
+  
+  .commands-panel { display:flex; flex-direction:column; overflow:hidden; border-bottom:1px solid rgba(255,255,255,0.06); }
+  .commands-header { padding:12px 16px; background:rgba(8,10,14,0.55); border-bottom:1px solid rgba(255,255,255,0.06); }
+  .commands-header h3 { margin:0; font-size:11px; color:var(--task); letter-spacing:0.06em; text-transform:uppercase; }
+  .command-messages { flex:1; overflow-y:auto; padding:12px; }
+  .command-messages::-webkit-scrollbar { width:6px; }
+  .command-messages::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.1); border-radius:3px; }
+  .command-msg { margin-bottom:6px; padding:6px 8px; background:rgba(188,140,255,0.1); border-left:2px solid var(--task); border-radius:4px; font-size:11px; }
+  .command-msg .sender { font-weight:600; color:var(--task); }
+  
+  .activity-log { padding:12px; background:rgba(8,10,14,0.55); max-height:250px; overflow-y:auto; font-size:10px; color:#8b949e; }
+  .activity-log h3 { margin:0 0 8px; font-size:10px; color:var(--warn); letter-spacing:0.06em; text-transform:uppercase; }
+  .activity-item { margin-bottom:4px; padding:6px 8px; background:rgba(0,0,0,0.3); border-radius:4px; border-left:2px solid rgba(255,255,255,0.1); }
+  .activity-item.join { border-left-color:var(--accent); }
+  .activity-item.leave { border-left-color:var(--danger); }
+  .activity-item.chat { border-left-color:var(--accent2); }
+  .activity-item.typing { border-left-color:var(--warn); }
+  .activity-item.command { border-left-color:var(--task); }
+  .activity-item .time { color:#6e7681; margin-right:6px; }
+  .activity-item .user { color:var(--accent); font-weight:600; }
+  .activity-item .action { color:#e6edf3; }
+  .activity-item .detail { color:#8b949e; font-size:9px; margin-top:2px; }
+  
+  @media (max-width: 1024px) {
+    .host-dashboard { grid-template-columns:1fr; grid-template-rows:auto auto 1fr auto; }
+    .sidebar { display:none; }
+    .right-panel { grid-row:2; grid-column:1; height:250px; }
+    .main { grid-row:3; grid-column:1; }
+  }
+</style>
+</head>
+<body>
+  <canvas id="bg"></canvas>
+  <div class="host-dashboard">
+    <header>
+      <div class="brand"><span class="dot"></span>CORTEX <span class="g">Host Control</span></div>
+      <div class="badge">HOST</div>
+      <div class="sid">session · ${sessionId.slice(0, 8)}</div>
+    </header>
+    
+    <div class="sidebar">
+      <h3>Participants</h3>
+      <div id="participants"></div>
+    </div>
+    
+    <div class="main">
+      <div class="visualization">
+        <canvas id="viz"></canvas>
+      </div>
+      <div class="queue-panel">
+        <h3>Message Queue</h3>
+        <div class="queue-items" id="queue"></div>
+      </div>
+    </div>
+    
+    <div class="right-panel">
+      <div class="call-panel">
+        <h3>Voice Call</h3>
+        <div class="call-controls">
+          <button id="startCallBtn" class="call-btn start">Start Call</button>
+          <button id="endCallBtn" class="call-btn end" disabled>End Call</button>
+        </div>
+        <div class="call-status" id="callStatus">Not in call</div>
+        <div class="call-participants" id="callParticipants"></div>
+      </div>
+      
+      <div class="chat-panel">
+        <div class="chat-header">
+          <h3>Team Chat</h3>
+        </div>
+        <div class="chat-messages" id="chatMessages"></div>
+        <div class="chat-input-area">
+          <textarea id="chatInput" class="chat-input" placeholder="Type a message..."></textarea>
+          <button id="sendChat">Send</button>
+        </div>
+      </div>
+      
+      <div class="commands-panel">
+        <div class="commands-header">
+          <h3>Cortex Commands</h3>
+        </div>
+        <div class="command-messages" id="commandMessages"></div>
+      </div>
+      
+      <div class="activity-log">
+        <h3>Activity Log</h3>
+        <div id="activityLog"></div>
+      </div>
+    </div>
+  </div>
+<script>
+(() => {
+  const TOKEN = ${JSON.stringify(token)};
+  const HOST_NAME = ${JSON.stringify(hostName)};
+  const sessionId = ${JSON.stringify(sessionId)};
+  const participantsEl = document.getElementById('participants');
+  const queueEl = document.getElementById('queue');
+  const chatMessages = document.getElementById('chatMessages');
+  const commandMessages = document.getElementById('commandMessages');
+  const activityLog = document.getElementById('activityLog');
+  const chatInput = document.getElementById('chatInput');
+  const startCallBtn = document.getElementById('startCallBtn');
+  const endCallBtn = document.getElementById('endCallBtn');
+  const callStatus = document.getElementById('callStatus');
+  const callParticipants = document.getElementById('callParticipants');
+  
+  let participants = [];
+  let queue = [];
+  let activeUser = null;
+  let inCall = false;
+  let callParticipantsList = [];
+  
+  // 3D Visualization
+  const vizCanvas = document.getElementById('viz');
+  const vizCtx = vizCanvas.getContext('2d');
+  let vizW = 0, vizH = 0;
+  const resizeViz = () => {
+    const rect = vizCanvas.parentElement.getBoundingClientRect();
+    vizW = rect.width; vizH = rect.height;
+    vizCanvas.width = vizW; vizCanvas.height = vizH;
+  };
+  resizeViz();
+  window.addEventListener('resize', resizeViz);
+  
+  const nodes = Array.from({length:12}, () => ({
+    x: Math.random() * vizW, y: Math.random() * vizH,
+    vx: (Math.random() - 0.5) * 1.2, vy: (Math.random() - 0.5) * 1.2,
+    name: 'node-' + Math.floor(Math.random() * 1000),
+    status: 'idle',
+    pulse: Math.random() * Math.PI * 2,
+    energy: Math.random() * 0.5 + 0.5
+  }));
+  
+  const drawViz = () => {
+    vizCtx.clearRect(0, 0, vizW, vizH);
+    
+    // Draw connections first (behind nodes)
+    vizCtx.lineWidth = 2;
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        const dx = nodes[i].x - nodes[j].x;
+        const dy = nodes[i].y - nodes[j].y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 220) {
+          const opacity = 1 - (dist / 220);
+          vizCtx.strokeStyle = \`rgba(126, 231, 135, \${opacity * 0.4})\`;
+          vizCtx.shadowBlur = 10;
+          vizCtx.shadowColor = '#7ee787';
+          vizCtx.beginPath();
+          vizCtx.moveTo(nodes[i].x, nodes[i].y);
+          vizCtx.lineTo(nodes[j].x, nodes[j].y);
+          vizCtx.stroke();
+        }
+      }
+    }
+    vizCtx.shadowBlur = 0;
+    
+    nodes.forEach(node => {
+      node.x += node.vx * node.energy; node.y += node.vy * node.energy;
+      node.pulse += 0.08;
+      if (node.x < 30 || node.x > vizW - 30) node.vx *= -1;
+      if (node.y < 30 || node.y > vizH - 30) node.vy *= -1;
+      
+      const pulseSize = Math.sin(node.pulse) * 8 + 25;
+      const glowIntensity = Math.sin(node.pulse) * 0.3 + 0.7;
+      
+      // Outer glow
+      vizCtx.beginPath();
+      vizCtx.arc(node.x, node.y, pulseSize + 15, 0, Math.PI * 2);
+      vizCtx.fillStyle = node.status === 'active' ? \`rgba(126, 231, 135, \${0.1 * glowIntensity})\` : \`rgba(88, 166, 255, \${0.08 * glowIntensity})\`;
+      vizCtx.fill();
+      
+      // Main node
+      vizCtx.beginPath();
+      vizCtx.arc(node.x, node.y, pulseSize, 0, Math.PI * 2);
+      vizCtx.fillStyle = node.status === 'active' ? \`rgba(126, 231, 135, \${0.7 * glowIntensity})\` : \`rgba(88, 166, 255, \${0.5 * glowIntensity})\`;
+      vizCtx.shadowBlur = 30 * glowIntensity;
+      vizCtx.shadowColor = node.status === 'active' ? '#7ee787' : '#58a6ff';
+      vizCtx.fill();
+      vizCtx.shadowBlur = 0;
+      
+      // Inner ring
+      vizCtx.beginPath();
+      vizCtx.arc(node.x, node.y, pulseSize - 8, 0, Math.PI * 2);
+      vizCtx.strokeStyle = node.status === 'active' ? \`rgba(255, 255, 255, \${0.8 * glowIntensity})\` : \`rgba(255, 255, 255, \${0.5 * glowIntensity})\`;
+      vizCtx.lineWidth = 2;
+      vizCtx.stroke();
+      
+      // Node label
+      vizCtx.fillStyle = '#e6edf3';
+      vizCtx.font = '11px monospace';
+      vizCtx.textAlign = 'center';
+      vizCtx.fillText(node.name, node.x, node.y + pulseSize + 18);
+    });
+    
+    requestAnimationFrame(drawViz);
+  };
+  drawViz();
+  
+  // Background particles
+  const bgCanvas = document.getElementById('bg');
+  const bgCtx = bgCanvas.getContext('2d');
+  let bgW = 0, bgH = 0;
+  const resizeBg = () => { bgW = window.innerWidth; bgH = window.innerHeight; bgCanvas.width = bgW; bgCanvas.height = bgH; };
+  resizeBg();
+  window.addEventListener('resize', resizeBg);
+  const pts = Array.from({length:200}, () => ({ x:Math.random()*bgW, y:Math.random()*bgH, vx:(Math.random()-0.5)*1.5, vy:(Math.random()-0.5)*1.5, size:Math.random()*3+1, phase:Math.random()*Math.PI*2 }));
+  const drawBg = () => {
+    bgCtx.clearRect(0,0,bgW,bgH);
+    pts.forEach(p => {
+      p.x += p.vx; p.y += p.vy; p.phase += 0.05;
+      if(p.x<0||p.x>bgW)p.vx*=-1; if(p.y<0||p.y>bgH)p.vy*=-1;
+      const pulse = Math.sin(p.phase) * 0.5 + 1;
+      bgCtx.beginPath();
+      bgCtx.arc(p.x,p.y,p.size*pulse,0,Math.PI*2);
+      bgCtx.fillStyle = \`rgba(126,231,135,\${0.2 + pulse*0.3})\`;
+      bgCtx.shadowBlur = 15*pulse;
+      bgCtx.shadowColor = '#7ee787';
+      bgCtx.fill();
+      bgCtx.shadowBlur = 0;
+    });
+    requestAnimationFrame(drawBg);
+  };
+  drawBg();
+  
+  const logActivity = (type, user, action, detail = '') => {
+    const el = document.createElement('div');
+    el.className = \`activity-item \${type}\`;
+    const time = new Date().toLocaleTimeString();
+    el.innerHTML = \`<span class="time">\${time}</span> <span class="user">\${user}</span> <span class="action">\${action}</span>\${detail ? \`<div class="detail">\${detail}</div>\` : ''}\`;
+    activityLog.insertBefore(el, activityLog.firstChild);
+    if (activityLog.children.length > 50) activityLog.removeChild(activityLog.lastChild);
+  };
+  
+  const renderParticipants = () => {
+    participantsEl.innerHTML = participants.map(p => \`
+      <div class="participant-card">
+        <div class="participant-header">
+          <div style="display:flex;gap:10px;align-items:center;">
+            <div class="participant-avatar">\${p.name[0].toUpperCase()}</div>
+            <div class="participant-info">
+              <div class="participant-name">\${p.name} \${p.name === HOST_NAME ? '(YOU)' : ''}</div>
+              <div class="participant-status \${p.isTyping ? 'typing' : ''}">
+                \${p.isTyping ? '<div class="typing-indicator"><span></span><span></span><span></span></div>' : 'Active · ' + p.messageCount + ' msgs'}
+              </div>
+            </div>
+          </div>
+          \${p.name !== HOST_NAME ? '<button class="kick-btn" onclick="kickParticipant(\'' + p.name + '\')">Kick</button>' : ''}
+        </div>
+      </div>
+    \`).join('');
+  };
+  
+  window.kickParticipant = (name) => {
+    if (confirm('Kick ' + name + ' from the session?')) {
+      fetch('send?token=' + encodeURIComponent(TOKEN), {
+        method:'POST',
+        headers:{'content-type':'application/json'},
+        body: JSON.stringify({ user: HOST_NAME, text: 'KICK:' + name, kind: 'system' })
+      });
+    }
+  };
+  
+  const renderQueue = () => {
+    let html = '';
+    if (activeUser) {
+      html += \`<div class="queue-item active"><span class="badge"></span><b>\${activeUser}</b> (active)</div>\`;
+    }
+    queue.forEach((q, i) => {
+      html += \`<div class="queue-item"><span class="badge"></span>\${i+1}. \${q.user}</div>\`;
+    });
+    queueEl.innerHTML = html;
+  };
+  
+  const addChatMessage = (msg) => {
+    const el = document.createElement('div');
+    el.className = 'chat-msg';
+    el.innerHTML = \`<div class="sender">\${msg.user}</div><div class="text">\${msg.text}</div>\`;
+    chatMessages.appendChild(el);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  };
+  
+  const addCommandMessage = (msg) => {
+    const el = document.createElement('div');
+    el.className = 'command-msg';
+    el.innerHTML = \`<div class="sender">\${msg.user}</div>\`;
+    el.appendChild(document.createTextNode(msg.text));
+    commandMessages.appendChild(el);
+    commandMessages.scrollTop = commandMessages.scrollHeight;
+  };
+  
+  const es = new EventSource('events?token=' + encodeURIComponent(TOKEN) + '&name=' + encodeURIComponent(HOST_NAME));
+  es.onmessage = (ev) => {
+    try {
+      const msg = JSON.parse(ev.data);
+      if (msg.kind === 'participant_join' && msg.data) {
+        participants = msg.data.participants || [];
+        renderParticipants();
+        const p = msg.data.participant;
+        logActivity('join', p.name, 'joined session', \`Total participants: \${participants.length}\`);
+      }
+      if (msg.kind === 'participant_leave' && msg.data) {
+        participants = msg.data.participants || [];
+        renderParticipants();
+        const p = msg.data.participant;
+        logActivity('leave', p.name, 'left session', \`Contributed \${p.messageCount} messages\`);
+      }
+      if (msg.kind === 'queue_update' && msg.data) {
+        queue = msg.data.queue || [];
+        activeUser = msg.data.active?.user || null;
+        renderQueue();
+        if (activeUser) {
+          logActivity('command', activeUser, 'is now active', \`Queue position: 0 · Queued: \${queue.length}\`);
+        }
+        if (queue.length > 0) {
+          queue.forEach((q, i) => {
+            logActivity('command', q.user, 'queued message', \`Position: \${i+1} · Kind: \${q.kind}\`);
+          });
+        }
+      }
+      if (msg.kind === 'chat') {
+        addChatMessage(msg);
+        logActivity('chat', msg.user, 'sent chat message', \`Length: \${msg.text.length} chars\`);
+      }
+      if (msg.kind === 'typing' && msg.data) {
+        const p = participants.find(pt => pt.name === msg.data.user);
+        if (p) {
+          p.isTyping = true;
+          renderParticipants();
+          logActivity('typing', msg.data.user, 'is typing', \`Last active: \${new Date().toLocaleTimeString()}\`);
+          setTimeout(() => { p.isTyping = false; renderParticipants(); }, 2000);
+        }
+      }
+      if (msg.kind === 'task' || msg.kind === 'msg') {
+        addCommandMessage(msg);
+        logActivity('command', msg.user, \`sent \${msg.kind}\`, \`Length: \${msg.text.length} chars\`);
+      }
+      if (msg.kind === 'call_state') {
+        logActivity('command', 'system', \`call \${msg.text}\`, msg.data?.initiator ? \`by \${msg.data.initiator}\` : '');
+      }
+    } catch (e) { console.error(e); }
+  };
+  
+  const sendChat = async () => {
+    const text = chatInput.value.trim();
+    if (!text) return;
+    chatInput.value = '';
+    await fetch('send?token=' + encodeURIComponent(TOKEN), {
+      method:'POST',
+      headers:{'content-type':'application/json'},
+      body: JSON.stringify({ user: HOST_NAME, text, kind: 'chat' })
+    });
+  };
+  
+  chatInput.addEventListener('input', () => {
+    fetch('send?token=' + encodeURIComponent(TOKEN), {
+      method:'POST',
+      headers:{'content-type':'application/json'},
+      body: JSON.stringify({ user: HOST_NAME, text: '', kind: 'typing' })
+    });
+  });
+  
+  document.getElementById('sendChat').onclick = sendChat;
+  chatInput.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); } });
+  
+  startCallBtn.onclick = () => {
+    inCall = true;
+    startCallBtn.disabled = true;
+    endCallBtn.disabled = false;
+    callStatus.textContent = 'In call - Host only';
+    callStatus.classList.add('active');
+    broadcast({ id: Date.now().toString(), user: 'system', kind: 'call_state', text: 'call_started', ts: Date.now(), data: { initiator: HOST_NAME } });
+    logActivity('command', HOST_NAME, 'started voice call', 'Host initiated call session');
+  };
+  
+  endCallBtn.onclick = () => {
+    inCall = false;
+    startCallBtn.disabled = false;
+    endCallBtn.disabled = true;
+    callStatus.textContent = 'Not in call';
+    callStatus.classList.remove('active');
+    callParticipantsList = [];
+    callParticipants.textContent = '';
+    broadcast({ id: Date.now().toString(), user: 'system', kind: 'call_state', text: 'call_ended', ts: Date.now() });
+    logActivity('command', HOST_NAME, 'ended voice call', 'Call session terminated');
+  };
+  
+  const broadcast = (msg) => {
+    fetch('send?token=' + encodeURIComponent(TOKEN), {
+      method:'POST',
+      headers:{'content-type':'application/json'},
+      body: JSON.stringify(msg)
+    });
+  };
+})();
+</script>
+</body>
+</html>`
+
 const renderUI = (sessionId: string, token: string, createdAt: number, userName: string): string => `<!doctype html>
 <html lang="en">
 <head>
@@ -1154,6 +1626,18 @@ export async function startShareServer(opts: {
       }
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' })
       res.end(renderDashboard(sessionId, token, sessionCreatedAt))
+      return
+    }
+
+    if (rel === 'host') {
+      // Check 20-minute expiry
+      if (Date.now() - sessionCreatedAt > SESSION_EXPIRY_MS) {
+        res.writeHead(410, { 'content-type': 'text/html; charset=utf-8' })
+        res.end(renderLateJoinPage())
+        return
+      }
+      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' })
+      res.end(renderHostUI(sessionId, token, sessionCreatedAt, opts.driverName || 'driver'))
       return
     }
 

@@ -1271,9 +1271,8 @@ const renderUI = (sessionId: string, token: string, createdAt: number, userName:
   const sendBtn = document.getElementById('sendBtn');
   const taskBtn = document.getElementById('taskBtn');
   const exitBtn = document.getElementById('exitBtn');
-  console.log('Exit button found:', exitBtn);
-  let currentQueue: any[] = [];
-  let activeUser: string | null = null;
+  let currentQueue = [];
+  let activeUser = null;
   let myTurn = true;
 
   const render = (m) => {

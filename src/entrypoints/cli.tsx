@@ -153,6 +153,24 @@ async function main(): Promise<void> {
       // Print LAN banner immediately, then upgrade to GLOBAL once the tunnel connects.
       await printBanner(handle.shareUrl, `${YELLOW}LAN${RESET} ${DIM}(spinning up global tunnel…)${RESET}`)
 
+      // Auto-launch host UI in default browser (Chrome/Safari) — host-only control panel.
+      // Opt out with CORTEX_NO_HOST_UI_AUTOOPEN=1.
+      if (process.env.CORTEX_NO_HOST_UI_AUTOOPEN !== '1') {
+        try {
+          const { spawn } = await import('node:child_process')
+          const hostUrl = `${handle.url}host`
+          const platform = process.platform
+          const cmd = platform === 'darwin' ? 'open' : platform === 'win32' ? 'start' : 'xdg-open'
+          const args = platform === 'win32' ? ['', hostUrl] : [hostUrl]
+          spawn(cmd, args, { detached: true, stdio: 'ignore', shell: platform === 'win32' }).unref()
+          process.stderr.write(
+            `${GREEN}${BOLD}🌐 Opening host control panel${RESET} ${DIM}│${RESET} ${CYAN}${hostUrl}${RESET}\n\n`,
+          )
+        } catch {
+          // Browser auto-open is non-critical
+        }
+      }
+
       if (process.env.CORTEX_NO_SHARE_TUNNEL !== '1') {
         void handle.startTunnel().then(async (pub: string | null) => {
           if (pub) {

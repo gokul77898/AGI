@@ -131,7 +131,10 @@ async function main(): Promise<void> {
   if (process.env.CORTEX_NO_SHARE !== '1') {
     try {
       const { ensureShareServer } = await import('../commands/share/share.js')
-      const handle = await ensureShareServer()
+      const { userInfo } = await import('node:os')
+      let osName = 'host'
+      try { osName = userInfo().username || 'host' } catch { /* ignore */ }
+      const handle = await ensureShareServer({ driverName: osName })
       // @ts-expect-error - qrcode ships without bundled types
       const { toString: qrToString } = await import('qrcode')
       const DIM = '\x1b[2m', BOLD = '\x1b[1m', GREEN = '\x1b[32m', CYAN = '\x1b[36m', MAGENTA = '\x1b[35m', YELLOW = '\x1b[33m', RESET = '\x1b[0m'

@@ -223,6 +223,76 @@ const renderNameEntryPage = (sessionId: string, token: string): string => `<!doc
 </body>
 </html>`
 
+const renderHostNameEntry = (sessionId: string, token: string, defaultName: string): string => `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Cortex · Host Setup</title>
+<style>
+  :root { color-scheme: dark; --accent:#7ee787; --accent2:#58a6ff; }
+  * { box-sizing: border-box; }
+  html, body { margin:0; height:100%; overflow:hidden; font-family:ui-monospace,Menlo,Consolas,monospace; color:#e6edf3; }
+  body { background: radial-gradient(ellipse at 30% 10%, #1a1020 0%, #050607 60%, #000 100%); display:grid; place-items:center; }
+  #bg { position:fixed; inset:0; z-index:0; opacity:0.55; pointer-events:none; }
+  .card { position:relative; z-index:1; max-width:440px; padding:40px; background:rgba(17,21,26,0.92); border:1px solid rgba(126,231,135,0.25); border-radius:16px; backdrop-filter:blur(20px); box-shadow:0 0 60px rgba(126,231,135,0.18); text-align:center; }
+  .badge { display:inline-block; padding:4px 10px; background:rgba(126,231,135,0.15); border:1px solid rgba(126,231,135,0.4); border-radius:20px; font-size:10px; color:var(--accent); letter-spacing:0.1em; text-transform:uppercase; margin-bottom:14px; }
+  h1 { margin:0 0 8px; font-size:22px; color:var(--accent); }
+  .sub { color:#8b949e; font-size:13px; line-height:1.6; margin-bottom:24px; }
+  input { width:100%; background:rgba(11,13,16,0.9); color:#e6edf3; border:1px solid rgba(255,255,255,0.15); border-radius:10px; padding:14px 16px; font-size:14px; margin-bottom:16px; outline:none; transition:all 0.2s; }
+  input:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(126,231,135,0.2); }
+  button { width:100%; border:0; border-radius:10px; padding:14px; cursor:pointer; font-weight:600; font-size:14px; letter-spacing:0.04em; transition:all 0.15s; background:linear-gradient(135deg,var(--accent),#2ea043); color:#fff; box-shadow:0 4px 14px rgba(126,231,135,0.3); }
+  button:hover { box-shadow:0 6px 20px rgba(126,231,135,0.45); transform:translateY(-1px); }
+  .err { color:#f85149; font-size:12px; margin-top:10px; display:none; }
+</style>
+</head>
+<body>
+  <canvas id="bg"></canvas>
+  <div class="card">
+    <div class="badge">★ HOST</div>
+    <h1>Set your host name</h1>
+    <div class="sub">This is what teammates will see. You'll get host controls (kick, voice call, queue oversight).</div>
+    <input id="nameInput" placeholder="Your name" maxlength="30" autofocus value="${defaultName.replace(/"/g, '&quot;')}"/>
+    <button id="enterBtn">Enter Host Control</button>
+    <div class="err" id="err"></div>
+  </div>
+<script>
+(() => {
+  const TOKEN = ${JSON.stringify(token)};
+  const sessionId = ${JSON.stringify(sessionId)};
+  const nameInput = document.getElementById('nameInput');
+  const enterBtn = document.getElementById('enterBtn');
+  const err = document.getElementById('err');
+  const enter = () => {
+    const name = nameInput.value.trim();
+    if (!name) { err.textContent = 'Please enter your name'; err.style.display = 'block'; return; }
+    enterBtn.disabled = true;
+    enterBtn.textContent = 'Loading…';
+    window.location.href = 'host?name=' + encodeURIComponent(name);
+  };
+  enterBtn.onclick = enter;
+  nameInput.onkeydown = (e) => { if (e.key === 'Enter') enter(); };
+  nameInput.select();
+
+  // Particle background
+  const cv = document.getElementById('bg');
+  const ctx = cv.getContext('2d');
+  let W = 0, H = 0;
+  const resize = () => { W = window.innerWidth; H = window.innerHeight; cv.width = W; cv.height = H; };
+  resize(); window.addEventListener('resize', resize);
+  const pts = Array.from({length:80}, () => ({ x:Math.random()*W, y:Math.random()*H, vx:(Math.random()-0.5)*0.6, vy:(Math.random()-0.5)*0.6 }));
+  const draw = () => {
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle = 'rgba(126,231,135,0.35)';
+    pts.forEach(p => { p.x += p.vx; p.y += p.vy; if(p.x<0||p.x>W)p.vx*=-1; if(p.y<0||p.y>H)p.vy*=-1; ctx.beginPath(); ctx.arc(p.x,p.y,2,0,Math.PI*2); ctx.fill(); });
+    requestAnimationFrame(draw);
+  };
+  draw();
+})();
+</script>
+</body>
+</html>`
+
 const renderDashboard = (sessionId: string, token: string, createdAt: number): string => `<!doctype html>
 <html lang="en">
 <head>
@@ -758,75 +828,107 @@ const renderHostUI = (sessionId: string, token: string, createdAt: number, hostN
   resizeViz();
   window.addEventListener('resize', resizeViz);
   
-  const nodes = Array.from({length:12}, () => ({
-    x: Math.random() * vizW, y: Math.random() * vizH,
-    vx: (Math.random() - 0.5) * 1.2, vy: (Math.random() - 0.5) * 1.2,
-    name: 'node-' + Math.floor(Math.random() * 1000),
-    status: 'idle',
-    pulse: Math.random() * Math.PI * 2,
-    energy: Math.random() * 0.5 + 0.5
-  }));
+  // Dynamic nodes: one per queued task + one for the active message.
+  // Empty queue → empty visualization (just an empty-state hint).
+  // Each node tracks an id so layout stays stable across updates.
+  let vizNodes = []; // { id, label, status:'active'|'queued', x,y,vx,vy,pulse }
+  
+  const syncVizNodes = () => {
+    const desired = [];
+    if (activeUser) desired.push({ id: 'active:' + activeUser, label: activeUser, status: 'active' });
+    queue.forEach((q, i) => desired.push({ id: 'q:' + (q.id || i) + ':' + q.user, label: (q.kind === 'task' ? '▸ ' : '') + q.user, status: 'queued' }));
+    
+    // Keep existing positions for surviving ids; spawn new ones at random positions.
+    const byId = new Map(vizNodes.map(n => [n.id, n]));
+    vizNodes = desired.map(d => {
+      const ex = byId.get(d.id);
+      if (ex) { ex.label = d.label; ex.status = d.status; return ex; }
+      return {
+        id: d.id, label: d.label, status: d.status,
+        x: 80 + Math.random() * Math.max(80, vizW - 160),
+        y: 80 + Math.random() * Math.max(80, vizH - 160),
+        vx: (Math.random() - 0.5) * 0.8,
+        vy: (Math.random() - 0.5) * 0.8,
+        pulse: Math.random() * Math.PI * 2,
+      };
+    });
+  };
   
   const drawViz = () => {
     vizCtx.clearRect(0, 0, vizW, vizH);
     
-    // Draw connections first (behind nodes)
-    vizCtx.lineWidth = 2;
-    for (let i = 0; i < nodes.length; i++) {
-      for (let j = i + 1; j < nodes.length; j++) {
-        const dx = nodes[i].x - nodes[j].x;
-        const dy = nodes[i].y - nodes[j].y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < 220) {
-          const opacity = 1 - (dist / 220);
-          vizCtx.strokeStyle = \`rgba(126, 231, 135, \${opacity * 0.4})\`;
-          vizCtx.shadowBlur = 10;
+    if (vizNodes.length === 0) {
+      // Empty state — show a hint message
+      vizCtx.fillStyle = 'rgba(139, 148, 158, 0.5)';
+      vizCtx.font = '13px ui-monospace, Menlo, monospace';
+      vizCtx.textAlign = 'center';
+      vizCtx.fillText('No active tasks · queue is empty', vizW/2, vizH/2 - 8);
+      vizCtx.fillStyle = 'rgba(139, 148, 158, 0.3)';
+      vizCtx.font = '11px ui-monospace, Menlo, monospace';
+      vizCtx.fillText('Nodes appear here as participants queue tasks/messages', vizW/2, vizH/2 + 12);
+      requestAnimationFrame(drawViz);
+      return;
+    }
+    
+    // Draw connections between every node (mesh) — light, depth-based opacity
+    vizCtx.lineWidth = 1.5;
+    for (let i = 0; i < vizNodes.length; i++) {
+      for (let j = i + 1; j < vizNodes.length; j++) {
+        const dx = vizNodes[i].x - vizNodes[j].x;
+        const dy = vizNodes[i].y - vizNodes[j].y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        if (dist < 280) {
+          const opacity = (1 - dist/280) * 0.5;
+          vizCtx.strokeStyle = \`rgba(126, 231, 135, \${opacity})\`;
+          vizCtx.shadowBlur = 8;
           vizCtx.shadowColor = '#7ee787';
           vizCtx.beginPath();
-          vizCtx.moveTo(nodes[i].x, nodes[i].y);
-          vizCtx.lineTo(nodes[j].x, nodes[j].y);
+          vizCtx.moveTo(vizNodes[i].x, vizNodes[i].y);
+          vizCtx.lineTo(vizNodes[j].x, vizNodes[j].y);
           vizCtx.stroke();
         }
       }
     }
     vizCtx.shadowBlur = 0;
     
-    nodes.forEach(node => {
-      node.x += node.vx * node.energy; node.y += node.vy * node.energy;
-      node.pulse += 0.08;
-      if (node.x < 30 || node.x > vizW - 30) node.vx *= -1;
-      if (node.y < 30 || node.y > vizH - 30) node.vy *= -1;
+    vizNodes.forEach(node => {
+      node.x += node.vx; node.y += node.vy;
+      node.pulse += 0.07;
+      if (node.x < 40 || node.x > vizW - 40) node.vx *= -1;
+      if (node.y < 40 || node.y > vizH - 40) node.vy *= -1;
       
-      const pulseSize = Math.sin(node.pulse) * 8 + 25;
+      const isActive = node.status === 'active';
+      const pulseSize = Math.sin(node.pulse) * 6 + (isActive ? 30 : 22);
       const glowIntensity = Math.sin(node.pulse) * 0.3 + 0.7;
+      const color = isActive ? '126, 231, 135' : '88, 166, 255';
       
       // Outer glow
       vizCtx.beginPath();
-      vizCtx.arc(node.x, node.y, pulseSize + 15, 0, Math.PI * 2);
-      vizCtx.fillStyle = node.status === 'active' ? \`rgba(126, 231, 135, \${0.1 * glowIntensity})\` : \`rgba(88, 166, 255, \${0.08 * glowIntensity})\`;
+      vizCtx.arc(node.x, node.y, pulseSize + 18, 0, Math.PI * 2);
+      vizCtx.fillStyle = \`rgba(\${color}, \${0.12 * glowIntensity})\`;
       vizCtx.fill();
       
       // Main node
       vizCtx.beginPath();
       vizCtx.arc(node.x, node.y, pulseSize, 0, Math.PI * 2);
-      vizCtx.fillStyle = node.status === 'active' ? \`rgba(126, 231, 135, \${0.7 * glowIntensity})\` : \`rgba(88, 166, 255, \${0.5 * glowIntensity})\`;
-      vizCtx.shadowBlur = 30 * glowIntensity;
-      vizCtx.shadowColor = node.status === 'active' ? '#7ee787' : '#58a6ff';
+      vizCtx.fillStyle = \`rgba(\${color}, \${0.7 * glowIntensity})\`;
+      vizCtx.shadowBlur = 28 * glowIntensity;
+      vizCtx.shadowColor = isActive ? '#7ee787' : '#58a6ff';
       vizCtx.fill();
       vizCtx.shadowBlur = 0;
       
       // Inner ring
       vizCtx.beginPath();
       vizCtx.arc(node.x, node.y, pulseSize - 8, 0, Math.PI * 2);
-      vizCtx.strokeStyle = node.status === 'active' ? \`rgba(255, 255, 255, \${0.8 * glowIntensity})\` : \`rgba(255, 255, 255, \${0.5 * glowIntensity})\`;
+      vizCtx.strokeStyle = \`rgba(255, 255, 255, \${(isActive ? 0.85 : 0.55) * glowIntensity})\`;
       vizCtx.lineWidth = 2;
       vizCtx.stroke();
       
       // Node label
-      vizCtx.fillStyle = '#e6edf3';
-      vizCtx.font = '11px monospace';
+      vizCtx.fillStyle = isActive ? '#7ee787' : '#e6edf3';
+      vizCtx.font = (isActive ? 'bold ' : '') + '12px ui-monospace, Menlo, monospace';
       vizCtx.textAlign = 'center';
-      vizCtx.fillText(node.name, node.x, node.y + pulseSize + 18);
+      vizCtx.fillText(node.label, node.x, node.y + pulseSize + 18);
     });
     
     requestAnimationFrame(drawViz);
@@ -949,6 +1051,7 @@ const renderHostUI = (sessionId: string, token: string, createdAt: number, hostN
         queue = msg.data.queue || [];
         activeUser = msg.data.active?.user || null;
         renderQueue();
+        syncVizNodes();
         if (activeUser) {
           logActivity('command', activeUser, 'is now active', \`Queue position: 0 · Queued: \${queue.length}\`);
         }
@@ -1639,8 +1742,17 @@ export async function startShareServer(opts: {
         res.end(renderLateJoinPage())
         return
       }
+      const queryName = url.searchParams.get('name')?.toString().slice(0, 30).trim()
+      if (!queryName) {
+        // No name yet — show name entry form
+        res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' })
+        res.end(renderHostNameEntry(sessionId, token, opts.driverName || 'host'))
+        return
+      }
+      // Track host as a participant so they show up in lists
+      addParticipant(queryName)
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' })
-      res.end(renderHostUI(sessionId, token, sessionCreatedAt, opts.driverName || 'driver'))
+      res.end(renderHostUI(sessionId, token, sessionCreatedAt, queryName))
       return
     }
 

@@ -881,13 +881,13 @@ const renderHostUI = (sessionId: string, token: string, createdAt: number, hostN
               </div>
             </div>
           </div>
-          \${p.name !== HOST_NAME ? '<button class="kick-btn" onclick="kickParticipant(\'' + p.name + '\')">Kick</button>' : ''}
+          \${p.name !== HOST_NAME ? '<button class="kick-btn" data-name="' + p.name + '">Kick</button>' : ''}
         </div>
       </div>
     \`).join('');
   };
   
-  window.kickParticipant = (name) => {
+  const kickParticipant = (name) => {
     if (confirm('Kick ' + name + ' from the session?')) {
       fetch('send?token=' + encodeURIComponent(TOKEN), {
         method:'POST',
@@ -896,6 +896,10 @@ const renderHostUI = (sessionId: string, token: string, createdAt: number, hostN
       });
     }
   };
+  participantsEl.addEventListener('click', (e) => {
+    const btn = e.target.closest('.kick-btn');
+    if (btn && btn.dataset.name) kickParticipant(btn.dataset.name);
+  });
   
   const renderQueue = () => {
     let html = '';
@@ -1429,7 +1433,7 @@ const renderUI = (sessionId: string, token: string, createdAt: number, userName:
     if (name) window.location.href = 'session?name=' + encodeURIComponent(name) + '&token=' + encodeURIComponent(token);
   };
 })();
-</script>
+<\\/script>
 </body></html>\`;
         es.close();
       }
